@@ -6,20 +6,11 @@ OneGlanse monitors how your brand appears inside real AI products — ChatGPT, G
 
 **It doesn't call the model API.** It opens the actual ChatGPT, Gemini, Perplexity, Claude, and AI Overview interfaces in a real browser — the same way a user would — and captures exactly what gets rendered: the full response, inline citations, recommended sources, and how your brand is positioned relative to competitors. API responses omit all of this. OneGlanse captures what users actually see.
 
-**Your data stays on your machine.** Responses, analytics, and auth sessions are stored in a PostgreSQL and ClickHouse instance you own and control. Nothing is sent to any external server. Response analysis calls go directly from your infrastructure to OpenAI or Anthropic using your own API key.
+**After capturing responses, OneGlanse uses OpenAI or Anthropic to analyze them.** Once a prompt run completes, the captured responses are sent to the LLM of your choice (OpenAI GPT or Claude) using your own API key. The LLM extracts GEO scores, sentiment, visibility, rank position, competitor mentions, citation sources, and the AI perception breakdown you see in the dashboard. You bring your own key — the call goes directly from your machine to OpenAI or Anthropic. Nothing passes through any third-party server.
+
+**Your data stays on your machine.** Responses, analytics, and auth sessions are stored in a PostgreSQL and ClickHouse instance you own and control — running locally via Docker or on your own VPS. No data is ever sent to an external server.
 
 **You use your own provider accounts.** OneGlanse authenticates to ChatGPT, Gemini, Perplexity, Claude, and Google using your own existing logins. No shared credentials. No scraped accounts. Your sessions, stored locally.
-
-**One command to start:**
-
-```bash
-git clone https://github.com/aryamantodkar/oneglanse
-cd oneglanse
-pnpm install
-pnpm local
-```
-
-Opens at [http://localhost:3000](http://localhost:3000). Everything is handled on first run: creates `.env`, starts Postgres / ClickHouse / Redis via Docker, runs migrations, and bootstraps the browser runtime. Go to `/providers` to connect your AI accounts.
 
 [App](https://app.oneglanse.com) · [Docs](https://docs.oneglanse.com) · [oneglanse.com](https://oneglanse.com)
 
@@ -60,6 +51,40 @@ Opens at [http://localhost:3000](http://localhost:3000). Everything is handled o
 - **Your own LLM key** — response analysis uses your OpenAI or Anthropic key, called directly from your infrastructure
 - **ClickHouse analytics** — high-volume time-series storage built for prompt tracking at scale
 - **Self-hosted, free forever** — full stack deploys to any VPS with a single command
+
+---
+
+## Quick Start
+
+**Requirements:** Node.js 20+, pnpm 10+, Docker
+
+```bash
+git clone https://github.com/aryamantodkar/oneglanse
+cd oneglanse
+pnpm install
+cp .env.example .env
+```
+
+Open `.env` and set your LLM API key. This is the only value you must provide — everything else is auto-configured:
+
+```bash
+# Pick one:
+OPENAI_API_KEY=sk-...
+
+# or, to use Claude instead:
+ANTHROPIC_API_KEY=sk-ant-...
+ANALYSIS_LLM_PROVIDER=claude
+```
+
+Then start the app:
+
+```bash
+pnpm local
+```
+
+Opens at [http://localhost:3000](http://localhost:3000). On first run the script auto-generates secrets, starts Postgres / ClickHouse / Redis, runs migrations, and bootstraps the browser runtime. Sign up with email — Google OAuth is optional and not required.
+
+Once you're in, go to `/providers` to connect your AI provider accounts, then add prompts and run.
 
 ---
 
