@@ -1,10 +1,5 @@
-import { resolveAppMode } from "@oneglanse/types";
 import type { Provider } from "@oneglanse/types";
 import { logger } from "@oneglanse/utils";
-import { env } from "../env.js";
-
-export const MAX_PARALLEL_PROVIDER_JOBS =
-	resolveAppMode(env.ONEGLANSE_APP_MODE) === "local" ? 1 : 2;
 
 // Bounded random jitter applied before each provider starts so that concurrent
 // jobs do not all spin up browsers simultaneously and spike CPU/memory.
@@ -14,7 +9,7 @@ const slotWaiters: Array<() => void> = [];
 let activeJobCount = 0;
 
 async function acquireGlobalSlot(): Promise<void> {
-	if (activeJobCount < MAX_PARALLEL_PROVIDER_JOBS) {
+	if (activeJobCount === 0) {
 		activeJobCount += 1;
 		return;
 	}

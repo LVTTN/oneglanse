@@ -80,6 +80,17 @@ Default ports:
 
 Persistent state defaults to `/opt/oneglanse/storage`. Override with `ONEGLANSE_STORAGE_ROOT` if your VPS should store data elsewhere.
 
+### Residential Proxy Requirement
+
+Self-hosted runs must use a residential proxy. Add the ThorData endpoint to your VPS `.env`:
+
+```bash
+THORDATA_PROXY_API_URL=https://your-thordata-api-endpoint
+PROXY_SCHEME=http
+```
+
+Before each browser launch, OneGlanse requests fresh residential proxy candidates from ThorData and routes the browser through one of them. Direct VPS connections are not allowed.
+
 ### Docker Image Overrides
 
 To use custom Docker images instead of the published ones, set these in `.env` before running `pnpm self-host`:

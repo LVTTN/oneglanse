@@ -1,10 +1,6 @@
 "use client";
 
-import {
-	cleanCitedText,
-	getDomain,
-	getFaviconUrls,
-} from "@oneglanse/utils";
+import { cleanCitedText, getDomain, getFaviconUrls } from "@oneglanse/utils";
 import { useMemo, useState } from "react";
 
 export type HoverSourceLink = {
@@ -29,28 +25,25 @@ export function SourcesHoverLinks({
 	const [showAllLinks, setShowAllLinks] = useState(false);
 	const [activeCardId, setActiveCardId] = useState<string | null>(null);
 
-	const linksToShow = useMemo(
-		() => {
-			const normalized: NormalizedHoverSourceLink[] = [];
+	const linksToShow = useMemo(() => {
+		const normalized: NormalizedHoverSourceLink[] = [];
 
-			for (const item of items) {
-				const rawUrl = item.url?.trim();
-				if (!rawUrl) continue;
+		for (const item of items) {
+			const rawUrl = item.url?.trim();
+			if (!rawUrl) continue;
 
-				const url = rawUrl.replace(/#.*$/, "");
-				if (!url) continue;
+			const url = rawUrl.replace(/#.*$/, "");
+			if (!url) continue;
 
-				normalized.push({
-					title: item.title || url,
-					url,
-					cited_text: item.cited_text,
-				});
-			}
+			normalized.push({
+				title: item.title || url,
+				url,
+				cited_text: item.cited_text,
+			});
+		}
 
-			return normalized;
-		},
-		[items],
-	);
+		return normalized;
+	}, [items]);
 	const duplicateCounts = useMemo(() => {
 		const counts = new Map<string, number>();
 
@@ -106,12 +99,12 @@ export function SourcesHoverLinks({
 							}
 						}}
 						title={item.title}
-						className={`inline-flex min-h-11 w-fit max-w-[18rem] flex-col gap-2 rounded-[22px] border px-3.5 py-3 text-[11px] shadow-[0_16px_40px_-26px_rgba(15,23,42,0.22)] transition-[background-color,box-shadow,color,transform,border-color,opacity,max-height] duration-200 ease-out ${
+						className={`inline-flex min-h-11 w-fit max-w-[18rem] flex-col gap-2 rounded-[22px] border px-3.5 py-3 text-[11px] shadow-[0_16px_40px_-26px_rgba(15,23,42,0.14)] transition-[background-color,box-shadow,color,transform,border-color,opacity,max-height] duration-200 ease-out ${
 							isActive
-								? "border-stone-200 bg-white text-gray-900 -translate-y-0.5 shadow-[0_18px_44px_-20px_rgba(15,23,42,0.28)] dark:border-white/15 dark:bg-neutral-950 dark:text-gray-100"
+								? "border-sky-200/80 bg-white text-slate-900 -translate-y-0.5 shadow-[0_18px_44px_-22px_rgba(15,23,42,0.18)] dark:border-sky-900/60 dark:bg-neutral-950 dark:text-slate-100"
 								: activeCardId
-									? "border-transparent bg-stone-50/75 text-gray-500 opacity-45 saturate-50 dark:bg-neutral-900/55 dark:text-gray-500"
-									: "border-transparent bg-stone-50 text-gray-600 hover:-translate-y-0.5 hover:bg-white hover:text-gray-900 hover:shadow-[0_18px_44px_-20px_rgba(15,23,42,0.28)] dark:bg-neutral-900/80 dark:text-gray-400 dark:hover:bg-neutral-950 dark:hover:text-gray-100"
+									? "border-slate-200/40 bg-slate-50/70 text-slate-500 opacity-45 saturate-50 dark:border-white/5 dark:bg-neutral-900/55 dark:text-slate-500"
+									: "border-slate-200/70 bg-slate-50/90 text-slate-600 hover:-translate-y-0.5 hover:border-sky-200/70 hover:bg-white hover:text-slate-900 hover:shadow-[0_18px_44px_-22px_rgba(15,23,42,0.16)] dark:border-white/10 dark:bg-neutral-900/80 dark:text-slate-400 dark:hover:border-sky-900/60 dark:hover:bg-neutral-950 dark:hover:text-slate-100"
 						}`}
 					>
 						<div className="flex items-start gap-2.5">
@@ -139,8 +132,8 @@ export function SourcesHoverLinks({
 								<span
 									className={`line-clamp-2 break-words text-[11px] leading-snug ${
 										isActive
-											? "font-medium text-gray-900 dark:text-gray-100"
-											: "text-gray-700 dark:text-gray-300"
+											? "font-normal text-slate-900 dark:text-slate-100"
+											: "font-normal text-slate-700 dark:text-slate-300"
 									}`}
 								>
 									{item.title}
@@ -152,7 +145,7 @@ export function SourcesHoverLinks({
 							<div
 								className={`overflow-hidden rounded-[16px] border px-3 py-0 text-[10px] leading-relaxed transition-[max-height,opacity,padding,margin,border-color,background-color,color] duration-200 ease-out ${
 									isActive
-										? "mt-0.5 max-h-44 border-black/5 bg-white/70 py-3 text-gray-700 opacity-100 dark:border-white/10 dark:bg-white/[0.05] dark:text-gray-200"
+										? "mt-0.5 max-h-44 border-slate-200/80 bg-slate-50/90 py-3 text-slate-500 opacity-100 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300"
 										: activeCardId
 											? "max-h-0 border-transparent bg-transparent py-0 opacity-0"
 											: "max-h-0 border-transparent bg-transparent py-0 opacity-0"
@@ -162,7 +155,7 @@ export function SourcesHoverLinks({
 								<span className="mb-1.5 block text-[9px] font-semibold uppercase tracking-[0.08em] text-gray-500 dark:text-gray-400">
 									Cited text
 								</span>
-								<span className="line-clamp-5 break-words font-medium text-gray-900 dark:text-gray-100">
+								<span className="line-clamp-5 break-words font-semibold text-slate-900 dark:text-slate-100">
 									{citedText}
 								</span>
 							</div>
@@ -177,7 +170,7 @@ export function SourcesHoverLinks({
 						e.stopPropagation();
 						setShowAllLinks(true);
 					}}
-					className="inline-flex min-h-11 items-center rounded-[20px] border border-transparent bg-stone-50 px-3.5 py-2 text-[11px] font-medium text-gray-500 shadow-[0_16px_40px_-26px_rgba(15,23,42,0.22)] transition-[background-color,box-shadow,color] hover:bg-white hover:text-gray-900 hover:shadow-[0_16px_40px_-22px_rgba(15,23,42,0.28)] dark:border-transparent dark:bg-neutral-900/80 dark:text-gray-400 dark:shadow-[0_16px_40px_-26px_rgba(0,0,0,0.48)] dark:hover:bg-neutral-950 dark:hover:text-gray-100"
+					className="inline-flex min-h-11 items-center rounded-[20px] border border-slate-200/70 bg-slate-50/90 px-3.5 py-2 text-[11px] font-medium text-slate-500 shadow-[0_16px_40px_-26px_rgba(15,23,42,0.14)] transition-[background-color,box-shadow,color,border-color] hover:border-sky-200/70 hover:bg-white hover:text-slate-900 hover:shadow-[0_16px_40px_-22px_rgba(15,23,42,0.16)] dark:border-white/10 dark:bg-neutral-900/80 dark:text-slate-400 dark:shadow-[0_16px_40px_-26px_rgba(0,0,0,0.48)] dark:hover:border-sky-900/60 dark:hover:bg-neutral-950 dark:hover:text-slate-100"
 					type="button"
 				>
 					+{remainingCount} more

@@ -41,7 +41,7 @@ import {
 	joinCitedTexts,
 } from "@oneglanse/utils";
 import { cn } from "@oneglanse/utils";
-import { Download, Loader2, Settings } from "lucide-react";
+import { Download, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useLayoutUserEmail } from "../workspace-context";
@@ -249,14 +249,6 @@ export default function SettingsPage() {
 
 	return (
 		<div className="web-page-panel max-w-4xl">
-			{/* Page Header */}
-			<div className="mb-6 flex items-center gap-2">
-				<Settings className="h-6 w-6 shrink-0 text-gray-500" />
-				<h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-					Settings
-				</h1>
-			</div>
-
 			{workspaceId ? (
 				<section>
 					<div className="mb-4 flex items-center gap-2">

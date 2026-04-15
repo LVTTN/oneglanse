@@ -307,9 +307,7 @@ export function SourcesIntelligencePanel({
 											Share
 										</SortableHeader>
 									) : (
-										<>
-											Share
-										</>
+										<>Share</>
 									)}
 								</TableHead>
 								<TableHead className="px-2 py-4 text-center text-[11px] font-semibold uppercase tracking-wide text-muted-foreground sm:px-4 sm:text-xs">
@@ -325,9 +323,7 @@ export function SourcesIntelligencePanel({
 											Citations
 										</SortableHeader>
 									) : (
-										<>
-											Citations
-										</>
+										<>Citations</>
 									)}
 								</TableHead>
 								<TableHead className="hidden px-2 py-4 text-center text-[11px] font-semibold uppercase tracking-wide text-muted-foreground sm:table-cell sm:px-4 sm:text-xs">
@@ -343,9 +339,7 @@ export function SourcesIntelligencePanel({
 											URLs
 										</SortableHeader>
 									) : (
-										<>
-											URLs
-										</>
+										<>URLs</>
 									)}
 								</TableHead>
 								<TableHead className="w-[130px] px-2 py-4 text-center text-[11px] font-semibold uppercase tracking-wide text-muted-foreground sm:px-4 sm:text-xs">
@@ -521,7 +515,9 @@ export function SourcesIntelligencePanel({
 																			onClick={(e) => e.stopPropagation()}
 																			className="mt-1 inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-gray-700 dark:hover:text-gray-300"
 																		>
-																			<span className="[overflow-wrap:anywhere]">{getUrlPath(source.url)}</span>
+																			<span className="[overflow-wrap:anywhere]">
+																				{getUrlPath(source.url)}
+																			</span>
 																			<ExternalLink className="h-3 w-3 shrink-0" />
 																		</a>
 																	</div>
@@ -530,8 +526,7 @@ export function SourcesIntelligencePanel({
 															<TableCell className="px-2 py-5 text-right text-sm font-semibold whitespace-nowrap text-gray-700 dark:text-gray-200 sm:px-4">
 																{formatCitationLabel(source.totalCitations)}
 															</TableCell>
-															<TableCell className="hidden px-2 py-5 align-top text-sm whitespace-normal text-gray-700 dark:text-gray-200 sm:table-cell sm:px-4 sm:whitespace-normal">
-															</TableCell>
+															<TableCell className="hidden px-2 py-5 align-top text-sm whitespace-normal text-gray-700 dark:text-gray-200 sm:table-cell sm:px-4 sm:whitespace-normal" />
 															<TableCell className="px-2 py-5 sm:px-4">
 																<div className="flex flex-nowrap items-center justify-center gap-1">
 																	{source.providers.map((provider) => (
@@ -554,11 +549,14 @@ export function SourcesIntelligencePanel({
 																	className="bg-white dark:bg-neutral-950"
 																>
 																	<TableCell
-																		className="px-4 py-5 pl-20"
+																		className="w-px whitespace-normal px-4 py-5 pl-20 align-top sm:whitespace-normal"
 																		colSpan={3}
 																	>
-																		<div className="max-w-full rounded-[22px] border border-gray-100/80 bg-stone-50 p-4 dark:border-gray-800 dark:bg-neutral-900">
-																			<p className="line-clamp-5 overflow-hidden text-sm font-medium leading-relaxed text-gray-900 [overflow-wrap:anywhere] break-words dark:text-gray-100">
+																		<div className="w-full border-l-2 border-gray-200/80 pl-4 dark:border-gray-800">
+																			<p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-400 dark:text-gray-500">
+																				Cited text
+																			</p>
+																			<p className="text-sm leading-7 text-gray-700 [overflow-wrap:anywhere] break-words italic dark:text-gray-300">
 																				{excerpt.citedText?.trim()
 																					? cleanCitedText(excerpt.citedText)
 																					: "This citation has no extracted quoted text."}

@@ -31,15 +31,10 @@ export default async function ProvidersPage({
 
 	return (
 		<div className="web-centered-page">
-			<div className="w-full max-w-5xl space-y-6">
-				<div className="max-w-2xl space-y-1.5">
-					<h1 className="text-xl font-semibold tracking-[-0.025em] text-gray-900 dark:text-gray-100">
-						Providers
-					</h1>
-					<p className="text-sm leading-6 text-gray-500 dark:text-gray-400">
-						{description}
-					</p>
-				</div>
+			<div className="w-full max-w-5xl space-y-5">
+				<p className="max-w-2xl text-sm leading-6 text-gray-500 dark:text-gray-400">
+					{description}
+				</p>
 
 				<ProviderConnectionsPanel
 					title={null}

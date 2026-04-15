@@ -3,10 +3,7 @@ import { PROVIDER_LIST } from "@oneglanse/types";
 import { logger } from "@oneglanse/utils";
 import { Worker } from "bullmq";
 import { env } from "./env.js";
-import {
-	MAX_PARALLEL_PROVIDER_JOBS,
-	runWithProviderExecutionGate,
-} from "./worker/executionGate.js";
+import { runWithProviderExecutionGate } from "./worker/executionGate.js";
 import { handleJob } from "./worker/jobHandler.js";
 
 // Exported so index.ts can call worker.close() during graceful shutdown.
@@ -52,7 +49,7 @@ async function startWorkers() {
 		});
 
 		logger.log(
-			`[agent] provider worker started → queue: ${queueName} (concurrency=1, global_limit=${MAX_PARALLEL_PROVIDER_JOBS})`,
+			`[agent] provider worker started → queue: ${queueName} (concurrency=1, global_limit=1)`,
 		);
 		return worker;
 	});

@@ -1,6 +1,9 @@
 import { spawnSync } from "node:child_process";
 import { ExternalServiceError, toErrorMessage } from "@oneglanse/errors";
-import { ensureAuthDirectories, getRuntimeProfileSeedPlan } from "@oneglanse/services";
+import {
+	ensureAuthDirectories,
+	getRuntimeProfileSeedPlan,
+} from "@oneglanse/services";
 import {
 	type Provider,
 	resolveAppMode,
@@ -22,7 +25,6 @@ import {
 	type UpstreamProxyConfig,
 	checkProxyReachable,
 } from "./proxy/forwarder.js";
-import { applyProxyProviderStrategy } from "./proxy/provider.js";
 
 const DEFAULT_PROXY_PORT: Record<ProxyScheme, number> = {
 	http: 80,
@@ -231,38 +233,7 @@ async function buildProxyAllocationInner(): Promise<ProxyAllocation> {
 	if (!shouldUseProxyInMode(resolveAppMode(env.ONEGLANSE_APP_MODE))) {
 		return { proxy: null, release: () => {} };
 	}
-
-	const proxyProvider = env.PROXY_PROVIDER?.trim().toLowerCase();
-	if (proxyProvider === "thordata" && env.THORDATA_PROXY_API_URL?.trim()) {
-		return acquireThorDataProxyInner();
-	}
-
-	const host = process.env.PROXY_HOST?.trim();
-	const port = process.env.PROXY_PORT?.trim();
-	if (!host || !port) {
-		return { proxy: null, release: () => {} };
-	}
-
-	const hostPort = `${host}:${port}`;
-	if (isProxyQuarantined(hostPort)) {
-		throw new Error(
-			`proxy ${hostPort} is quarantined — skipping until cooldown expires`,
-		);
-	}
-
-	const scheme = normalizeProxyScheme(
-		(process.env.PROXY_SCHEME ?? env.PROXY_SCHEME)?.trim() || "http",
-	);
-	return {
-		proxy: applyProxyProviderStrategy(
-			parseProxyConfig(
-				formatProxyServerUrl(scheme, host, Number(port)),
-				process.env.PROXY_USERNAME?.trim() || undefined,
-				process.env.PROXY_PASSWORD?.trim() || undefined,
-			),
-		),
-		release: () => {},
-	};
+	return acquireThorDataProxyInner();
 }
 
 async function buildProxyAllocation(): Promise<ProxyAllocation> {
@@ -370,7 +341,8 @@ export async function launchContext(provider: Provider): Promise<{
 		});
 
 		context = new PlaywrightBrowserContextCompat(rawContext);
-		const browser = (rawBrowser as unknown as Browser | null) ?? context.getBrowser();
+		const browser =
+			(rawBrowser as unknown as Browser | null) ?? context.getBrowser();
 
 		return {
 			browser,

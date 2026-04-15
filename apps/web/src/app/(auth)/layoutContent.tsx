@@ -103,6 +103,7 @@ export default function LayoutContent({
 	const canLaunchProvidersLocally = isInteractiveAuthAllowedInMode(appMode);
 	const isProvidersPage = pathname === "/providers";
 	const isWorkspaceSetupPage = pathname?.startsWith("/workspace") ?? false;
+	const isWorkspaceGatewayPage = pathname === "/workspace";
 	const isPeoplePage = pathname?.startsWith("/people") ?? false;
 	const pageHeader = getPageHeader(pathname, appMode);
 	const providersWorkspaceId =
@@ -135,6 +136,12 @@ export default function LayoutContent({
 		router,
 		shouldShowConnectionGate,
 	]);
+
+	useEffect(() => {
+		if (resolvedWorkspace && isWorkspaceGatewayPage) {
+			router.replace(`/dashboard?workspace=${resolvedWorkspace.id}`);
+		}
+	}, [isWorkspaceGatewayPage, resolvedWorkspace, router]);
 
 	useEffect(() => {
 		if (
@@ -192,7 +199,9 @@ export default function LayoutContent({
 		return (
 			<div className="web-app-shell">
 				<main className="web-app-main bg-stone-50 dark:bg-neutral-950">
-					<div className="web-app-scroll">{children}</div>
+					<div className="web-app-scroll">
+						{resolvedWorkspace && isWorkspaceGatewayPage ? null : children}
+					</div>
 				</main>
 			</div>
 		);

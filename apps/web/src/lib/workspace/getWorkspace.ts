@@ -1,6 +1,7 @@
 import { auth } from "@lib/auth/auth";
 import { db } from "@oneglanse/db";
 import type { Workspace } from "@oneglanse/db";
+import { inArray } from "drizzle-orm";
 import { headers } from "next/headers";
 
 export async function getWorkspace(): Promise<Workspace | null> {
@@ -26,17 +27,28 @@ export async function getWorkspace(): Promise<Workspace | null> {
 		if (workspace) return workspace;
 	}
 
-	const membership = await db.query.workspaceMembers.findFirst({
+	const memberships = await db.query.workspaceMembers.findMany({
 		where: (wm, { and, eq, isNull }) =>
 			and(eq(wm.userId, session.user.id), isNull(wm.deletedAt)),
-		orderBy: (wm, { desc }) => [desc(wm.createdAt)],
+		columns: {
+			workspaceId: true,
+		},
 	});
 
-	if (!membership) return null;
+	const workspaceIds = Array.from(
+		new Set(
+			memberships
+				.map((membership) => membership.workspaceId)
+				.filter((workspaceId): workspaceId is string => Boolean(workspaceId)),
+		),
+	);
+
+	if (workspaceIds.length === 0) return null;
 
 	const workspace = await db.query.workspaces.findFirst({
-		where: (table, { and, eq, isNull }) =>
-			and(eq(table.id, membership.workspaceId), isNull(table.deletedAt)),
+		where: (table, { and, isNull }) =>
+			and(inArray(table.id, workspaceIds), isNull(table.deletedAt)),
+		orderBy: (table, { desc }) => [desc(table.createdAt)],
 	});
 
 	return workspace ?? null;

@@ -93,6 +93,20 @@ type SortColumn =
 	| "visibility"
 	| "position";
 
+function getPromptDialogTitleClass(prompt: string | undefined): string {
+	const length = prompt?.trim().length ?? 0;
+
+	if (length > 320) {
+		return "text-[1.02rem] leading-5 tracking-[-0.025em] sm:text-[1.12rem] sm:leading-6";
+	}
+
+	if (length > 220) {
+		return "text-[1.12rem] leading-6 tracking-[-0.03em] sm:text-[1.24rem] sm:leading-7";
+	}
+
+	return "text-[1.28rem] leading-7 tracking-[-0.04em] sm:text-[1.55rem] sm:leading-8";
+}
+
 export default function Prompts() {
 	const searchParams = useSafeSearchParams();
 	const workspaceId = searchParams.get("workspace") ?? "";
@@ -1052,7 +1066,8 @@ export default function Prompts() {
 										<DialogTitle
 											className={cn(
 												formSectionTitleClassName,
-												"text-base leading-6 sm:text-[1.0625rem]",
+												"max-w-[52rem] text-pretty font-semibold text-gray-950 dark:text-gray-50",
+												getPromptDialogTitleClass(openPrompt?.prompt),
 											)}
 										>
 											{openPrompt?.prompt}

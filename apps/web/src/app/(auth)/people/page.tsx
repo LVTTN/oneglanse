@@ -288,14 +288,6 @@ export default function PeoplePage() {
 
 	return (
 		<div className="web-page-panel max-w-4xl">
-			{/* Page Header */}
-			<div className="mb-6 flex items-center gap-2">
-				<Users className="h-6 w-6 shrink-0 text-gray-500" />
-				<h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-					People
-				</h1>
-			</div>
-
 			{/* Workspace & Organization */}
 			<section>
 				<div className="mb-4 flex items-center gap-2">
