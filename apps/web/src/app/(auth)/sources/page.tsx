@@ -8,6 +8,7 @@ import {
 	Button,
 	EmptyStatePanel,
 	ProviderModelSelect,
+	SectionHeading,
 	Skeleton,
 	type SourcePanelCitationDomain,
 	type SourcePanelDomainRow,
@@ -249,133 +250,142 @@ export default function SourcesPage(): React.JSX.Element {
 	return (
 		<div className="web-page-wide">
 			<div className="web-page-wide-inner ui-stagger space-y-6 sm:space-y-8">
-				<div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
-					<ExportMenu
-						className="w-full sm:w-auto"
-						disabled={!hasExportableData}
-						onExportJson={() => {
-							const citationRows = domainGroups.flatMap((group) =>
-								group.urls.flatMap((source) =>
-									(source.excerpts ?? []).map((excerpt) => ({
-										domain: group.domain,
-										url: source.url,
-										title: source.title,
-										urlPath: getUrlPath(source.url),
-										totalCitations: source.totalSources ?? 0,
-										modelProvider: excerpt.model_provider ?? "",
-										citedText: excerpt.cited_text
-											? cleanCitedText(excerpt.cited_text)
-											: "",
-									})),
-								),
-							);
-							const topDomains = domainGroups.slice(0, 10).map((group) => ({
-								domain: group.domain,
-								totalCitations: group.totalCitations,
-								share:
-									metrics.totalCitations > 0
-										? Number(
-												(
-													(group.totalCitations / metrics.totalCitations) *
-													100
-												).toFixed(1),
-											)
-										: 0,
-								urlCount: group.urlCount,
-							}));
-							const concentrationRisk =
-								metrics.topDomainShare >= 45
-									? "high"
-									: metrics.topDomainShare >= 30
-										? "moderate"
-										: "healthy";
-
-							downloadJson(`sources-${workspaceId}-${Date.now()}.json`, {
-								generatedAt: new Date().toISOString(),
-								workspaceId,
-								report: {
-									title: "Sources Intelligence Export",
-									version: "2.0",
-									filters: { selectedProvider, activeTab: "all" },
-								},
-								overview: {
-									totalDomains: metrics.totalDomains,
-									totalUrls: metrics.totalUrls,
-									totalCitations: metrics.totalCitations,
-									avgCitationsPerUrl: metrics.avgCitationsPerUrl,
-								},
-								impactSummary: {
-									topDomain: metrics.topDomain,
-									topDomainShare: `${metrics.topDomainShare}%`,
-									sourceConcentrationRisk: concentrationRisk,
-								},
-								leaderboards: { topDomains },
-								detailedData: {
-									aggregate: metrics,
-									domainGroups: domainGroups.map((group) => ({
+				<SectionHeading
+					as="h2"
+					title="Source Influence Overview"
+					description="See which domains, URLs, and excerpts are shaping AI model answers across your tracked prompts."
+					titleClassName="text-lg font-semibold tracking-tight text-gray-900 dark:text-gray-100"
+					descriptionClassName="mt-1 text-sm font-normal text-gray-500 dark:text-gray-400"
+					trailing={
+						<div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+							<ExportMenu
+								className="w-full sm:w-auto"
+								disabled={!hasExportableData}
+								onExportJson={() => {
+									const citationRows = domainGroups.flatMap((group) =>
+										group.urls.flatMap((source) =>
+											(source.excerpts ?? []).map((excerpt) => ({
+												domain: group.domain,
+												url: source.url,
+												title: source.title,
+												urlPath: getUrlPath(source.url),
+												totalCitations: source.totalSources ?? 0,
+												modelProvider: excerpt.model_provider ?? "",
+												citedText: excerpt.cited_text
+													? cleanCitedText(excerpt.cited_text)
+													: "",
+											})),
+										),
+									);
+									const topDomains = domainGroups.slice(0, 10).map((group) => ({
 										domain: group.domain,
 										totalCitations: group.totalCitations,
+										share:
+											metrics.totalCitations > 0
+												? Number(
+														(
+															(group.totalCitations / metrics.totalCitations) *
+															100
+														).toFixed(1),
+													)
+												: 0,
 										urlCount: group.urlCount,
-										providers: Array.from(group.providers),
-									})),
-									sources: displayedSources,
-									citations: citationRows,
-								},
-							});
-						}}
-						onExportCsv={() => {
-							const rows = [
-								{
-									section: "overview",
-									metric: "Domains",
-									value: metrics.totalDomains,
-								},
-								{
-									section: "overview",
-									metric: "URLs",
-									value: metrics.totalUrls,
-								},
-								{
-									section: "overview",
-									metric: "Citations",
-									value: metrics.totalCitations,
-								},
-								{
-									section: "overview",
-									metric: "Top Domain Share",
-									value: `${metrics.topDomainShare}%`,
-								},
-								...domainGroups.map((group) => ({
-									section: "domain_performance",
-									domain: group.domain,
-									total_citations: group.totalCitations,
-									url_count: group.urlCount,
-									providers: Array.from(group.providers).join(", "),
-								})),
-								...displayedSources.map((source) => ({
-									section: "url_performance",
-									url: source.url,
-									url_path: getUrlPath(source.url),
-									title: source.title,
-									total_citations: source.totalSources ?? 0,
-									domain: getDomain(source.url) || "",
-									models: getUniqueModelProviders(source.excerpts ?? []).join(
-										", ",
-									),
-									cited_texts: joinCitedTexts(source.excerpts ?? [], {
-										clean: true,
-									}),
-								})),
-							];
-							downloadCsv(`sources-${workspaceId}-${Date.now()}.csv`, rows);
-						}}
-					/>
-					<ProviderModelSelect
-						value={selectedProvider}
-						onValueChange={setSelectedProvider}
-						triggerClassName="w-full sm:w-auto"
-					/>
-				</div>
+									}));
+									const concentrationRisk =
+										metrics.topDomainShare >= 45
+											? "high"
+											: metrics.topDomainShare >= 30
+												? "moderate"
+												: "healthy";
+
+									downloadJson(`sources-${workspaceId}-${Date.now()}.json`, {
+										generatedAt: new Date().toISOString(),
+										workspaceId,
+										report: {
+											title: "Sources Intelligence Export",
+											version: "2.0",
+											filters: { selectedProvider, activeTab: "all" },
+										},
+										overview: {
+											totalDomains: metrics.totalDomains,
+											totalUrls: metrics.totalUrls,
+											totalCitations: metrics.totalCitations,
+											avgCitationsPerUrl: metrics.avgCitationsPerUrl,
+										},
+										impactSummary: {
+											topDomain: metrics.topDomain,
+											topDomainShare: `${metrics.topDomainShare}%`,
+											sourceConcentrationRisk: concentrationRisk,
+										},
+										leaderboards: { topDomains },
+										detailedData: {
+											aggregate: metrics,
+											domainGroups: domainGroups.map((group) => ({
+												domain: group.domain,
+												totalCitations: group.totalCitations,
+												urlCount: group.urlCount,
+												providers: Array.from(group.providers),
+											})),
+											sources: displayedSources,
+											citations: citationRows,
+										},
+									});
+								}}
+								onExportCsv={() => {
+									const rows = [
+										{
+											section: "overview",
+											metric: "Domains",
+											value: metrics.totalDomains,
+										},
+										{
+											section: "overview",
+											metric: "URLs",
+											value: metrics.totalUrls,
+										},
+										{
+											section: "overview",
+											metric: "Citations",
+											value: metrics.totalCitations,
+										},
+										{
+											section: "overview",
+											metric: "Top Domain Share",
+											value: `${metrics.topDomainShare}%`,
+										},
+										...domainGroups.map((group) => ({
+											section: "domain_performance",
+											domain: group.domain,
+											total_citations: group.totalCitations,
+											url_count: group.urlCount,
+											providers: Array.from(group.providers).join(", "),
+										})),
+										...displayedSources.map((source) => ({
+											section: "url_performance",
+											url: source.url,
+											url_path: getUrlPath(source.url),
+											title: source.title,
+											total_citations: source.totalSources ?? 0,
+											domain: getDomain(source.url) || "",
+											models: getUniqueModelProviders(
+												source.excerpts ?? [],
+											).join(", "),
+											cited_texts: joinCitedTexts(source.excerpts ?? [], {
+												clean: true,
+											}),
+										})),
+									];
+									downloadCsv(`sources-${workspaceId}-${Date.now()}.csv`, rows);
+								}}
+							/>
+							<ProviderModelSelect
+								value={selectedProvider}
+								onValueChange={setSelectedProvider}
+								triggerClassName="w-full sm:w-auto"
+							/>
+						</div>
+					}
+				/>
 
 				<div className="pt-4 sm:pt-5">
 					<SourcesIntelligencePanel
