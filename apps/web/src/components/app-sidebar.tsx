@@ -133,7 +133,7 @@ export function AppSidebar({
 
 	if (canAccessScheduleInMode(appMode)) {
 		generalItems.splice(3, 0, {
-			title: canRunPromptsNowInMode(appMode) ? "Run Prompts" : "Schedule",
+			title: "Schedule",
 			url: `/schedule?workspace=${activeWorkspace?.id ?? ""}`,
 			icon: Clock,
 		});

@@ -15,20 +15,6 @@ on:
       - 'docker-compose.yml'
       - 'docker-compose.public.yml'
       - '.github/workflows/build.yml'
-  pull_request:
-    branches: [main]
-    paths:
-      - 'apps/**'
-      - 'packages/**'
-      - '.npmrc'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
-      - 'pnpm-workspace.yaml'
-      - 'tsconfig.json'
-      - 'turbo.json'
-      - 'docker-compose.yml'
-      - 'docker-compose.public.yml'
-      - '.github/workflows/build.yml'
   workflow_dispatch:
 
 env:

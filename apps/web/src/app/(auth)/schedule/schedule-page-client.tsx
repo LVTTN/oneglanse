@@ -168,6 +168,25 @@ function ManualRunView({
 	);
 }
 
+function ScheduleIntro({
+	mode,
+}: {
+	mode: "local" | "self-host";
+}) {
+	return (
+		<div className="space-y-1">
+			<h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+				Overview
+			</h2>
+			<p className="text-sm text-gray-500 dark:text-gray-400">
+				{mode === "local"
+					? "Run prompts on demand while your machine is active. Recurring scheduling is available in the cloud and self-host versions."
+					: "Manage recurring runs for this workspace and trigger a manual run whenever you need fresh results."}
+			</p>
+		</div>
+	);
+}
+
 export default function SchedulePageClient({
 	appMode,
 	workspaceId: initialWorkspaceId,
@@ -310,14 +329,7 @@ export default function SchedulePageClient({
 	if (!canConfigureSchedule) {
 		return (
 			<div className="web-page-panel max-w-2xl">
-				<div className="space-y-1">
-					<p className="text-sm text-gray-500 dark:text-gray-400">
-						Local mode supports on-demand runs while your machine is active.
-					</p>
-					<p className="text-sm text-gray-500 dark:text-gray-400">
-						Scheduling is available in the cloud and self-host versions.
-					</p>
-				</div>
+				<ScheduleIntro mode="local" />
 				<div className="flex justify-center pt-3 sm:pt-4">
 					<div className="w-full">
 						<ManualRunView
@@ -333,6 +345,7 @@ export default function SchedulePageClient({
 
 	return (
 		<div className="web-page-panel max-w-2xl">
+			<ScheduleIntro mode="self-host" />
 			<>
 				{cronTimingQuery.isLoading ? (
 					<div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2">
@@ -425,7 +438,7 @@ export default function SchedulePageClient({
 
 						<div className="space-y-2">
 							<h2 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-								Run Prompts
+								Recurring schedule
 							</h2>
 							<div className="space-y-2">
 								{SCHEDULE_OPTIONS.map((option) => (

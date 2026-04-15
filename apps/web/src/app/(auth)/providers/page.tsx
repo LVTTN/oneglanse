@@ -1,6 +1,8 @@
-import { ProviderConnectionsPanel } from "@/components/provider-connections-panel";
+import { ProvidersScreen } from "@/components/providers-screen";
+import { env } from "@/env";
 import { getPostProvidersContinuePath } from "@/lib/auth/redirect";
 import { getWorkspace } from "@/lib/workspace/getWorkspace";
+import { resolveAppMode } from "@oneglanse/types";
 
 export default async function ProvidersPage({
 	searchParams,
@@ -20,16 +22,19 @@ export default async function ProvidersPage({
 				workspaceId: workspace?.id ?? null,
 			})
 		: null;
+	const appMode = resolveAppMode(env.NEXT_PUBLIC_ONEGLANSE_APP_MODE);
+	const isSelfHost = appMode === "self-host";
 
 	return (
-		<div className="web-centered-page">
-			<div className="w-full max-w-5xl">
-				<ProviderConnectionsPanel
-					title={null}
-					description={null}
-					nextHref={nextHref}
-				/>
-			</div>
-		</div>
+		<ProvidersScreen
+			title={null}
+			description={
+				isSelfHost
+					? "Run `pnpm run auth` on your local machine, complete provider sign-in there, and upload the saved session to this VPS."
+					: null
+			}
+			nextHref={nextHref}
+			showSetupNotice={!isSelfHost}
+		/>
 	);
 }

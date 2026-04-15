@@ -1,4 +1,3 @@
-import { auth } from "@/lib/auth/auth";
 import {
 	canAccessPeopleInMode,
 	canAccessProvidersInMode,
@@ -12,7 +11,8 @@ export async function middleware(request: NextRequest) {
 
 	// In local mode, /providers is the auth setup page and /api/providers powers
 	// the connect buttons on that page. Both must work without an app session.
-	const isLocalProvidersPage = appMode === "local" && pathname.startsWith("/providers");
+	const isLocalProvidersPage =
+		appMode === "local" && pathname.startsWith("/providers");
 	const isLocalProvidersApi =
 		appMode === "local" && pathname.startsWith("/api/providers");
 	const isPublicLocalProvidersRequest =
@@ -20,7 +20,9 @@ export async function middleware(request: NextRequest) {
 
 	const session = isPublicLocalProvidersRequest
 		? null
-		: await auth.api.getSession({ headers: request.headers });
+		: await (await import("@/lib/auth/auth")).auth.api.getSession({
+				headers: request.headers,
+			});
 
 	if (!session && !isPublicLocalProvidersRequest) {
 		const loginUrl = new URL("/login", request.url);
