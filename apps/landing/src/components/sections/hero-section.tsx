@@ -9,8 +9,9 @@ export function HeroSection(): React.JSX.Element {
 						The Open-Source AI Visibility & GEO Tracker.
 					</h1>
 					<p className="mt-4 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">
-						Measure how your brand is perceived across major LLM providers and
-						turn visibility, sentiment, and source data into better positioning.
+						Free and open source. Track how your brand appears inside ChatGPT,
+						Gemini, Perplexity, Claude, and Google AI Overview — using your own
+						accounts, on your own infrastructure.
 					</p>
 				</div>
 

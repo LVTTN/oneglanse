@@ -35,6 +35,13 @@ const MAX_CYCLE_BACKOFF = 60_000;
 const RETRY_DELAY = 5_000;
 const BOT_DETECTION_COOLDOWN = 30_000;
 
+export class StopProviderRunError extends Error {
+	constructor(provider: Provider) {
+		super(`${provider} run stopped`);
+		this.name = "StopProviderRunError";
+	}
+}
+
 export type AgentFactory = () => Promise<{
 	browser: Browser;
 	context: BrowserContext;
@@ -122,6 +129,8 @@ async function runSingleAttempt(
 	refs: Refs,
 	executor: AttemptExecutor,
 	timeoutMs: number,
+	signal?: AbortSignal,
+	onAttemptStart?: (attempt: BrowserAttempt) => void | Promise<void>,
 ): Promise<AskPromptResult[]> {
 	// Phase 1 — setup (browser launch + warmup + initial navigation).
 	// Bounded by AGENT_SETUP_TIMEOUT_MS, completely separate from the execution
@@ -152,11 +161,24 @@ async function runSingleAttempt(
 	refs.context = agent.context;
 	refs.page = agent.page;
 	refs.proxy = agent.proxy ?? null;
+	await onAttemptStart?.(agent);
+
+	if (signal?.aborted) {
+		throw new StopProviderRunError(label as Provider);
+	}
 
 	// Phase 2 — execution (type → submit → wait for response → extract).
 	// The 5-min clock starts here, after setup is fully complete.
 	return await Promise.race([
 		executor(agent, currentPayload),
+		new Promise<never>((_, reject) => {
+			if (!signal) return;
+			const onAbort = () => {
+				signal.removeEventListener("abort", onAbort);
+				reject(new StopProviderRunError(label as Provider));
+			};
+			signal.addEventListener("abort", onAbort, { once: true });
+		}),
 		new Promise<never>((_, reject) =>
 			setTimeout(
 				() =>
@@ -181,8 +203,13 @@ async function runRetryCycle(
 	plog: ReturnType<typeof createProviderLogger>,
 	executor: AttemptExecutor,
 	timeoutMs?: number,
+	signal?: AbortSignal,
+	onAttemptStart?: (attempt: BrowserAttempt) => void | Promise<void>,
+	onAttemptComplete?: () => void | Promise<void>,
 ): Promise<{ done: true } | { done: false; updatedPayload: PromptPayload }> {
-	const useProxy = shouldUseProxyInMode(resolveAppMode(process.env.ONEGLANSE_APP_MODE));
+	const useProxy = shouldUseProxyInMode(
+		resolveAppMode(process.env.ONEGLANSE_APP_MODE),
+	);
 	let nextPayload = currentPayload;
 
 	for (let attempt = 0; attempt < ATTEMPTS_PER_CYCLE; attempt++) {
@@ -199,6 +226,9 @@ async function runRetryCycle(
 		};
 
 		try {
+			if (signal?.aborted) {
+				throw new StopProviderRunError(label as Provider);
+			}
 			const result = await runSingleAttempt(
 				agentFactory,
 				nextPayload,
@@ -206,11 +236,17 @@ async function runRetryCycle(
 				refs,
 				executor,
 				timeoutMs ?? PROVIDER_TIMEOUT_PER_PROMPT_MS,
+				signal,
+				onAttemptStart,
 			);
 
 			accumulatedResults.push(...result);
 			return { done: true };
 		} catch (err) {
+			if (err instanceof StopProviderRunError) {
+				plog.warn("run stopped from UI");
+				return { done: true };
+			}
 			if (err instanceof IPRefreshNeededError) {
 				const failureType = getFailureType(err);
 				plog.warn(
@@ -311,6 +347,7 @@ async function runRetryCycle(
 			}
 		} finally {
 			await closeContextAndBrowser(refs);
+			await onAttemptComplete?.();
 		}
 	}
 
@@ -329,6 +366,9 @@ export async function runWithRetryCycles(
 	provider: Provider,
 	options?: {
 		executor?: AttemptExecutor;
+		signal?: AbortSignal;
+		onAttemptStart?: (attempt: BrowserAttempt) => void | Promise<void>;
+		onAttemptComplete?: () => void | Promise<void>;
 	},
 ): Promise<AskPromptResult[]> {
 	const plog = createProviderLogger(provider);
@@ -341,7 +381,8 @@ export async function runWithRetryCycles(
 
 	// Scale execution timeout by prompt count so multi-prompt jobs don't time out mid-run.
 	// Setup (launch + warmup + nav) is bounded separately by AGENT_SETUP_TIMEOUT_MS.
-	const timeoutMs = Math.max(1, payload.prompts.length) * PROVIDER_TIMEOUT_PER_PROMPT_MS;
+	const timeoutMs =
+		Math.max(1, payload.prompts.length) * PROVIDER_TIMEOUT_PER_PROMPT_MS;
 	plog.log(
 		`setup budget: ${AGENT_SETUP_TIMEOUT_MS / 1000}s | execution budget: ${timeoutMs / 60000}min (${payload.prompts.length} prompt(s))`,
 	);
@@ -357,16 +398,19 @@ export async function runWithRetryCycles(
 			await sleep(backoff);
 		}
 
-			const outcome = await runRetryCycle(
-				label,
-				agentFactory,
-				accumulatedResults,
-				currentPayload,
-				cycle,
-				plog,
-				executor,
-				timeoutMs,
-			);
+		const outcome = await runRetryCycle(
+			label,
+			agentFactory,
+			accumulatedResults,
+			currentPayload,
+			cycle,
+			plog,
+			executor,
+			timeoutMs,
+			options?.signal,
+			options?.onAttemptStart,
+			options?.onAttemptComplete,
+		);
 
 		if (outcome.done) {
 			return accumulatedResults;

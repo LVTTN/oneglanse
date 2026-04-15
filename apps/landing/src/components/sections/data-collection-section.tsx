@@ -1,12 +1,12 @@
 import { METHOD_POINTS } from "@/lib/landing-content";
 import { Card } from "@oneglanse/ui";
 import {
-	Bot,
 	ExternalLink,
-	Eye,
 	Fingerprint,
+	KeyRound,
+	Monitor,
 	ShieldCheck,
-	Wifi,
+	ShieldOff,
 } from "lucide-react";
 
 export function DataCollectionSection(): React.JSX.Element {
@@ -36,19 +36,19 @@ export function DataCollectionSection(): React.JSX.Element {
 						>
 							<span className="inline-flex items-center gap-2.5">
 								{index === 0 ? (
-									<Eye
+									<Monitor
 										className="h-4 w-4 shrink-0 text-muted-foreground"
 										aria-hidden="true"
 									/>
 								) : null}
 								{index === 1 ? (
-									<Wifi
+									<KeyRound
 										className="h-4 w-4 shrink-0 text-muted-foreground"
 										aria-hidden="true"
 									/>
 								) : null}
 								{index === 2 ? (
-									<Bot
+									<ShieldCheck
 										className="h-4 w-4 shrink-0 text-muted-foreground"
 										aria-hidden="true"
 									/>
@@ -60,7 +60,7 @@ export function DataCollectionSection(): React.JSX.Element {
 									/>
 								) : null}
 								{index === 4 ? (
-									<ShieldCheck
+									<ShieldOff
 										className="h-4 w-4 shrink-0 text-muted-foreground"
 										aria-hidden="true"
 									/>

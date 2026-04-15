@@ -1,8 +1,11 @@
 import { ValidationError, classifyError, toErrorMessage } from "@oneglanse/errors";
 import {
+	buildProviderCancelKey,
+	buildProviderJobId,
 	hasRuntimeProviderAuth,
 	redis,
 	storePromptResponses,
+	updateProviderProgress,
 	writeProviderAuthStatus,
 } from "@oneglanse/services";
 import type {
@@ -18,9 +21,10 @@ import type { Job } from "bullmq";
 import { agentHandler } from "../core/agentHandler.js";
 import { createAgent } from "../core/createAgent.js";
 import { PROVIDER_CONFIGS } from "../core/providers/index.js";
+import { StopProviderRunError } from "../lib/browser/proxy/runner.js";
 import { runAnalysisInBackground } from "./analysis.js";
 
-type ProviderStatus = "pending" | "running" | "completed" | "failed";
+type ProviderStatus = "pending" | "running" | "completed" | "failed" | "stopped";
 type ProviderJobData = {
 	jobGroupId: string;
 	provider: Provider;
@@ -32,38 +36,7 @@ type ProviderJobData = {
 };
 
 const AGENT_PROGRESS_TTL_SECONDS = 24 * 60 * 60;
-
-/**
- * Lua script for atomic read-modify-write on the progress key.
- *
- * KEYS[1]  = progressKey
- * ARGV[1]  = provider name
- * ARGV[2]  = new provider status ("running" | "completed" | "failed")
- * ARGV[3]  = result count as string, or "" to leave results unchanged
- *
- * Atomically: GET → merge provider fields → recompute derived fields → SET
- * Returns the updated JSON string, or nil if the key was missing.
- */
-const UPDATE_PROGRESS_LUA = `
-local raw = redis.call('GET', KEYS[1])
-if not raw then return nil end
-local data = cjson.decode(raw)
-data['providers'][ARGV[1]] = ARGV[2]
-if ARGV[3] ~= '' then
-  data['results'][ARGV[1]] = tonumber(ARGV[3])
-end
-data['updateId'] = (data['updateId'] or 0) + 1
-local total = 0
-for _, v in pairs(data['results']) do total = total + v end
-data['stats']['actualResponses'] = total
-local allDone = true
-for _, v in pairs(data['providers']) do
-  if v ~= 'completed' and v ~= 'failed' then allDone = false; break end
-end
-if allDone then data['status'] = 'completed' end
-redis.call('SET', KEYS[1], cjson.encode(data), 'EX', ${AGENT_PROGRESS_TTL_SECONDS})
-return cjson.encode(data)
-`;
+const activeProviderStops = new Map<string, () => Promise<void>>();
 
 function buildProgressSeed(providers: Provider[], promptCount: number): string {
 	return JSON.stringify({
@@ -118,24 +91,31 @@ function buildEmptyResults(): Record<Provider, AgentResult> {
 	) as unknown as Record<Provider, AgentResult>;
 }
 
-async function updateProgress(
-	progressKey: string,
+export function registerActiveProviderStop(
+	jobGroupId: string,
 	provider: Provider,
-	status: ProviderStatus,
-	resultCount: number | null,
-): Promise<void> {
-	const countArg = resultCount !== null ? String(resultCount) : "";
-	const result = await redis.eval(
-		UPDATE_PROGRESS_LUA,
-		1,
-		progressKey,
-		provider,
-		status,
-		countArg,
+	stop: () => Promise<void>,
+): void {
+	activeProviderStops.set(buildProviderJobId(jobGroupId, provider), stop);
+}
+
+export function unregisterActiveProviderStop(
+	jobGroupId: string,
+	provider: Provider,
+): void {
+	activeProviderStops.delete(buildProviderJobId(jobGroupId, provider));
+}
+
+export async function stopActiveProviderRun(args: {
+	jobGroupId: string;
+	provider: Provider;
+}): Promise<boolean> {
+	const stop = activeProviderStops.get(
+		buildProviderJobId(args.jobGroupId, args.provider),
 	);
-	if (result === null) {
-		logger.warn("progress key missing during update (expired?)");
-	}
+	if (!stop) return false;
+	await stop();
+	return true;
 }
 
 export async function handleJob(job: Job<ProviderJobData>): Promise<boolean> {
@@ -162,7 +142,12 @@ export async function handleJob(job: Job<ProviderJobData>): Promise<boolean> {
 		plog.warn("skipped (no authenticated session)");
 		await Promise.all(
 			ownedProviders.map((currentProvider) =>
-				updateProgress(progressKey, currentProvider, "failed", 0),
+				updateProviderProgress({
+					jobGroupId,
+					provider: currentProvider,
+					status: "failed",
+					resultCount: 0,
+				}),
 			),
 		);
 		return true;
@@ -176,18 +161,19 @@ export async function handleJob(job: Job<ProviderJobData>): Promise<boolean> {
 		plog.warn("skipped (skip: true in providerRegistry)");
 		await Promise.all(
 			ownedProviders.map((currentProvider) =>
-				updateProgress(progressKey, currentProvider, "failed", 0),
+				updateProviderProgress({
+					jobGroupId,
+					provider: currentProvider,
+					status: "failed",
+					resultCount: 0,
+				}),
 			),
 		);
 		return true;
 	}
 
-	await Promise.all(
-		ownedProviders.map((currentProvider) =>
-			updateProgress(progressKey, currentProvider, "running", null),
-		),
-	);
-
+	const stopController = new AbortController();
+	let activeAttemptCleanup: (() => Promise<void>) | null = null;
 	const executionTime = new Date().toISOString();
 	const payload: PromptPayload = {
 		user_id,
@@ -198,72 +184,142 @@ export async function handleJob(job: Job<ProviderJobData>): Promise<boolean> {
 		})),
 		created_at: executionTime,
 	};
-
 	const label = PROVIDER_CONFIGS[provider].label;
 	const providerResults = buildEmptyResults();
 
+	registerActiveProviderStop(jobGroupId, provider, async () => {
+		stopController.abort();
+		await activeAttemptCleanup?.().catch(() => {});
+	});
+
 	try {
-		const result = await agentHandler(label, () => createAgent(provider), payload, provider);
-		providerResults[provider] = {
-			status: result.length > 0 ? "fulfilled" : "rejected",
-			data: result,
-		};
-	} catch (err) {
-		plog.error("failed:", toErrorMessage(err));
-		if (classifyError(err) === "logged_out" && (AUTH_PROVIDER_LIST as readonly string[]).includes(provider)) {
-			await writeProviderAuthStatus(provider as AuthProvider, {
-				connecting: false,
-				lastUpdatedAt: new Date().toISOString(),
-				syncedAt: null,
-				error: "Session expired — please re-authenticate",
-				launcherPid: null,
-			}).catch(() => {});
-		}
-	}
-
-	const fulfilledProviders = ownedProviders.filter(
-		(currentProvider) =>
-			providerResults[currentProvider].status === "fulfilled",
-	);
-
-	if (fulfilledProviders.length > 0) {
-		const partialResults: ModelResult = providerResults;
-
 		try {
-			await storePromptResponses({
-				results: partialResults,
-				userId: user_id,
-				workspaceId: workspace_id,
-				promptRunAt: executionTime,
-			});
-		} catch (storeErr) {
-			// Extraction succeeded but save failed — log prominently but do not
-			// rethrow. Rethrowing would cause BullMQ to retry the entire job
-			// (re-running the browser and re-querying the AI), which is wasteful
-			// and wrong for a storage failure.
-			plog.error("❌ failed to persist results to ClickHouse:", toErrorMessage(storeErr));
+			await Promise.all(
+				ownedProviders.map((currentProvider) =>
+					updateProviderProgress({
+						jobGroupId,
+						provider: currentProvider,
+						status: "running",
+						resultCount: null,
+					}),
+				),
+			);
+
+			if (
+				(await redis.get(buildProviderCancelKey(jobGroupId, provider))) === "1"
+			) {
+				throw new StopProviderRunError(provider);
+			}
+
+			const result = await agentHandler(
+				label,
+				() => createAgent(provider),
+				payload,
+				provider,
+				{
+					signal: stopController.signal,
+					onAttemptStart: (attempt) => {
+						activeAttemptCleanup = async () => {
+							await attempt.context.close().catch(() => {});
+							await attempt.cleanup?.().catch(() => {});
+						};
+					},
+					onAttemptComplete: () => {
+						activeAttemptCleanup = null;
+					},
+				},
+			);
+
+			// agentHandler handles StopProviderRunError internally and returns
+			// partial/empty results — check signal here to still mark as stopped.
+			if (stopController.signal.aborted) {
+				throw new StopProviderRunError(provider);
+			}
+
+			providerResults[provider] = {
+				status: result.length > 0 ? "fulfilled" : "rejected",
+				data: result,
+			};
+		} catch (err) {
+			if (err instanceof StopProviderRunError) {
+				plog.warn("stopped from UI");
+				await Promise.all(
+					ownedProviders.map((currentProvider) =>
+						updateProviderProgress({
+							jobGroupId,
+							provider: currentProvider,
+							status: "stopped",
+							resultCount: 0,
+						}),
+					),
+				);
+				return true;
+			}
+			plog.error("failed:", toErrorMessage(err));
+			if (
+				classifyError(err) === "logged_out" &&
+				(AUTH_PROVIDER_LIST as readonly string[]).includes(provider)
+			) {
+				await writeProviderAuthStatus(provider as AuthProvider, {
+					connecting: false,
+					lastUpdatedAt: new Date().toISOString(),
+					syncedAt: null,
+					error: "Session expired — please re-authenticate",
+					launcherPid: null,
+				}).catch(() => {});
+			}
 		}
 
-		runAnalysisInBackground({
-			workspaceId: workspace_id,
-			userId: user_id,
-			provider,
-			jobGroupId,
-		});
-	}
+		const fulfilledProviders = ownedProviders.filter(
+			(currentProvider) =>
+				providerResults[currentProvider].status === "fulfilled",
+		);
 
-	await Promise.all(
-		ownedProviders.map((currentProvider) =>
-			updateProgress(
-				progressKey,
-				currentProvider,
-				providerResults[currentProvider].status === "fulfilled"
-					? "completed"
-					: "failed",
-				providerResults[currentProvider].data.length,
+		if (fulfilledProviders.length > 0) {
+			const partialResults: ModelResult = providerResults;
+
+			try {
+				await storePromptResponses({
+					results: partialResults,
+					userId: user_id,
+					workspaceId: workspace_id,
+					promptRunAt: executionTime,
+				});
+			} catch (storeErr) {
+				// Extraction succeeded but save failed — log prominently but do not
+				// rethrow. Rethrowing would cause BullMQ to retry the entire job
+				// (re-running the browser and re-querying the AI), which is wasteful
+				// and wrong for a storage failure.
+				plog.error(
+					"❌ failed to persist results to ClickHouse:",
+					toErrorMessage(storeErr),
+				);
+			}
+
+			runAnalysisInBackground({
+				workspaceId: workspace_id,
+				userId: user_id,
+				provider,
+				jobGroupId,
+			});
+		}
+
+		await Promise.all(
+			ownedProviders.map((currentProvider) =>
+				updateProviderProgress({
+					jobGroupId,
+					provider: currentProvider,
+					status:
+						providerResults[currentProvider].status === "fulfilled"
+							? "completed"
+							: "failed",
+					resultCount: providerResults[currentProvider].data.length,
+				}),
 			),
-		),
-	);
+		);
 
-	return true;
+		return true;
+	} finally {
+		unregisterActiveProviderStop(jobGroupId, provider);
+	}
 }

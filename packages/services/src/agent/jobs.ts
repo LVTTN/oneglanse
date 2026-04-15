@@ -4,10 +4,12 @@ import type { Provider, UserPrompt } from "@oneglanse/types";
 import { PROVIDER_LIST } from "@oneglanse/types";
 import { fetchUserPromptsForWorkspace } from "../prompt/index.js";
 import { readAuthenticatedRuntimeProviders } from "./auth.js";
+import { updateProviderProgress } from "./progress.js";
 import { getProviderQueue } from "./queue.js";
 import { redis, waitForRedis } from "./redis.js";
 
 const AGENT_PROGRESS_TTL_SECONDS = 24 * 60 * 60;
+const PROVIDER_STOP_CHANNEL = "oneglanse:agent:provider-stop";
 
 type ProviderJobPayload = {
 	jobGroupId: string;
@@ -23,8 +25,18 @@ export type SubmitAgentJobResult =
 	| { status: "queued"; jobGroupId: string }
 	| { status: "empty" };
 
-function buildProviderJobId(jobGroupId: string, provider: Provider): string {
+export function buildProviderJobId(
+	jobGroupId: string,
+	provider: Provider,
+): string {
 	return `${jobGroupId}__${provider}`;
+}
+
+export function buildProviderCancelKey(
+	jobGroupId: string,
+	provider: Provider,
+): string {
+	return `job:${jobGroupId}:cancel:${provider}`;
 }
 
 async function enqueueProviderJob(payload: ProviderJobPayload): Promise<void> {
@@ -131,10 +143,7 @@ export async function submitAgentJobGroup(args: {
 		) as Record<string, string>,
 		results: Object.fromEntries(
 			authenticatedProviders.map((p) => [p, 0]),
-		) as Record<
-			string,
-			number
-		>,
+		) as Record<string, number>,
 		stats: {
 			totalPrompts: prompts.length,
 			expectedResponses: prompts.length * authenticatedProviders.length,
@@ -162,4 +171,41 @@ export async function submitAgentJobGroup(args: {
 	}
 
 	return { status: "queued", jobGroupId };
+}
+
+export async function cancelProviderRun(args: {
+	jobGroupId: string;
+	provider: Provider;
+}): Promise<{ accepted: boolean }> {
+	const { jobGroupId, provider } = args;
+	const queue = getProviderQueue(provider);
+	const job = await queue.getJob(buildProviderJobId(jobGroupId, provider));
+
+	await waitForRedis();
+	await redis.set(
+		buildProviderCancelKey(jobGroupId, provider),
+		"1",
+		"EX",
+		AGENT_PROGRESS_TTL_SECONDS,
+	);
+
+	if (job) {
+		const state = await job.getState();
+		if (state === "waiting" || state === "delayed" || state === "prioritized") {
+			await job.remove();
+			await updateProviderProgress({
+				jobGroupId,
+				provider,
+				status: "stopped",
+				resultCount: 0,
+			});
+			return { accepted: true };
+		}
+	}
+
+	await redis.publish(
+		PROVIDER_STOP_CHANNEL,
+		JSON.stringify({ jobGroupId, provider }),
+	);
+	return { accepted: true };
 }

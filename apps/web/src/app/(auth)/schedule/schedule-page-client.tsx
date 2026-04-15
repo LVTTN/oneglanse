@@ -1,11 +1,11 @@
 "use client";
 
 import {
-	formDialogSupportCardClassName,
 	formHintClassName,
 	formPanelClassName,
 	formSecondaryButtonClassName,
 } from "@/components/forms/auth-form-chrome";
+import { useProviderRunToast } from "@/components/provider-run-toast";
 import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
 import { api } from "@/trpc/react";
 import type { AppMode } from "@oneglanse/types";
@@ -119,21 +119,21 @@ function ManualRunView({
 }) {
 	return (
 		<div
-			className={cn(formPanelClassName, "space-y-4 px-5 py-5 sm:px-6 sm:py-6")}
+			className={cn(formPanelClassName, "space-y-5 px-5 py-5 sm:px-6 sm:py-6")}
 		>
-			<div className={cn(formDialogSupportCardClassName, "space-y-3")}>
-				<div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-700 dark:bg-neutral-950/80 dark:text-gray-200">
+			<div className="space-y-3">
+				<div className="inline-flex items-center gap-2 rounded-full bg-stone-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-700 dark:bg-neutral-900 dark:text-gray-200">
 					<Zap className="h-3.5 w-3.5" />
-					{mode === "local" ? "Local Run" : "Manual Run"}
+					{mode === "local" ? "Run prompts" : "Manual run"}
 				</div>
 				<div className="space-y-1.5">
 					<h2 className="text-lg font-semibold tracking-[-0.02em] text-gray-900 dark:text-gray-100">
-						Run Prompts Now
+						{mode === "local" ? "Run prompts now" : "Run prompts now"}
 					</h2>
 					<p className="text-sm leading-6 text-gray-500 dark:text-gray-400">
 						{mode === "local"
-							? "Local mode is built for manual runs while your machine is active. Start a fresh run whenever you want updated responses."
-							: "Trigger a run immediately outside of your scheduled cadence."}
+							? "Start a fresh run whenever you want updated responses."
+							: "Trigger an immediate run without changing the recurring schedule."}
 					</p>
 				</div>
 			</div>
@@ -141,7 +141,7 @@ function ManualRunView({
 			<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 				{mode === "local" ? (
 					<p className={cn(formHintClassName, "max-w-xl text-left")}>
-						Recurring schedules are available only in cloud and self-host mode.
+						Recurring schedules are available in self-host and cloud mode.
 					</p>
 				) : (
 					<span />
@@ -176,13 +176,156 @@ function ScheduleIntro({
 	return (
 		<div className="space-y-1">
 			<h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-				Overview
+				{mode === "local" ? "Run prompts" : "Schedule overview"}
 			</h2>
 			<p className="text-sm text-gray-500 dark:text-gray-400">
 				{mode === "local"
-					? "Run prompts on demand while your machine is active. Recurring scheduling is available in the cloud and self-host versions."
-					: "Manage recurring runs for this workspace and trigger a manual run whenever you need fresh results."}
+					? "Use local mode for clean, on-demand runs while your machine is active."
+					: "Manage recurring runs and trigger a manual run whenever you need fresh results."}
 			</p>
+		</div>
+	);
+}
+
+function TimingSummary({
+	currentSchedule,
+	nextRun,
+	lastPromptRun,
+}: {
+	currentSchedule: string | null;
+	nextRun: string | null | undefined;
+	lastPromptRun: string | null | undefined;
+}) {
+	return (
+		<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+			<div className={cn(formPanelClassName, "space-y-2 px-5 py-5")}>
+				<div className="flex items-center gap-2">
+					<Calendar className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+					<span className="text-xs font-medium uppercase tracking-[0.08em] text-gray-500 dark:text-gray-400">
+						Next run
+					</span>
+				</div>
+				<p className="text-base font-semibold text-gray-900 dark:text-gray-100">
+					{currentSchedule && nextRun
+						? formatRelativeTime(nextRun)
+						: "Not scheduled"}
+				</p>
+			</div>
+
+			<div className={cn(formPanelClassName, "space-y-2 px-5 py-5")}>
+				<div className="flex items-center gap-2">
+					<PlayCircle className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+					<span className="text-xs font-medium uppercase tracking-[0.08em] text-gray-500 dark:text-gray-400">
+						Last run
+					</span>
+				</div>
+				<p className="text-base font-semibold text-gray-900 dark:text-gray-100">
+					{lastPromptRun ? formatAbsoluteTime(lastPromptRun) : "Never"}
+				</p>
+			</div>
+		</div>
+	);
+}
+
+function ScheduleOptionsSection({
+	currentSchedule,
+	selected,
+	saving,
+	hasChanges,
+	onSelect,
+	onDisable,
+	onSave,
+}: {
+	currentSchedule: string | null;
+	selected: string | null;
+	saving: boolean;
+	hasChanges: boolean;
+	onSelect: (value: string) => void;
+	onDisable: () => Promise<void>;
+	onSave: () => Promise<void>;
+}) {
+	return (
+		<div className="space-y-4">
+			<div className="space-y-1">
+				<h2 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+					Recurring schedule
+				</h2>
+				<p className="text-sm text-gray-500 dark:text-gray-400">
+					Choose how often this workspace should run automatically.
+				</p>
+			</div>
+
+			{currentSchedule ? (
+				<div className="flex flex-col gap-3 rounded-[24px] border border-gray-200/80 bg-stone-50 px-4 py-4 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] dark:border-gray-800 dark:bg-neutral-900 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)] sm:flex-row sm:items-center sm:justify-between">
+					<div className="flex min-w-0 items-center gap-2">
+						<Check className="h-4 w-4 text-gray-700 dark:text-gray-300" />
+						<span className="break-words text-sm font-medium text-gray-900 dark:text-gray-100">
+							Active: {getScheduleLabel(currentSchedule)}
+						</span>
+					</div>
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={() => void onDisable()}
+						disabled={saving}
+						className={cn(formSecondaryButtonClassName, "h-10 w-auto px-4")}
+					>
+						{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Disable"}
+					</Button>
+				</div>
+			) : null}
+
+			<div className="space-y-3">
+				{SCHEDULE_OPTIONS.map((option) => (
+					<button
+						key={option.value}
+						type="button"
+						onClick={() => onSelect(option.value)}
+						className={`flex w-full items-center justify-between gap-4 ${formPanelClassName} px-4 py-4 text-left transition-[border-color,background-color,box-shadow] duration-200 ${
+							selected === option.value
+								? "border-gray-900 bg-stone-50 dark:border-gray-100 dark:bg-neutral-900"
+								: "border-gray-100/80 hover:border-gray-200 hover:bg-stone-50 dark:border-gray-800 dark:hover:border-gray-700 dark:hover:bg-neutral-900"
+						}`}
+					>
+						<div className="min-w-0">
+							<span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+								{option.label}
+							</span>
+							<p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+								{option.description}
+							</p>
+						</div>
+						<div
+							className={cn(
+								"flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors",
+								selected === option.value
+									? "border-gray-900 bg-gray-900 dark:border-gray-100 dark:bg-gray-100"
+									: "border-gray-300 dark:border-gray-600",
+							)}
+						>
+							{selected === option.value ? (
+								<Check className="h-3 w-3 text-white dark:text-gray-900" />
+							) : null}
+						</div>
+					</button>
+				))}
+			</div>
+
+			{hasChanges ? (
+				<div className="flex justify-stretch pt-1 sm:justify-end">
+					<Button
+						onClick={() => void onSave()}
+						disabled={saving}
+						className="gap-2"
+					>
+						{saving ? (
+							<Loader2 className="h-4 w-4 animate-spin" />
+						) : (
+							"Save schedule"
+						)}
+					</Button>
+				</div>
+			) : null}
 		</div>
 	);
 }
@@ -232,12 +375,18 @@ export default function SchedulePageClient({
 		},
 	);
 
+	useProviderRunToast({
+		active: Boolean(runJobId) && isRunning,
+		workspaceId,
+		jobId: runJobId,
+		response: jobStatusQuery.data?.response,
+	});
+
 	useEffect(() => {
 		if (!isRunning || !runJobId) return;
 		if (jobStatusQuery.data?.status === "completed") {
 			setIsRunning(false);
 			setRunJobId(null);
-			toast.success("Run completed successfully.");
 		}
 	}, [isRunning, jobStatusQuery.data?.status, runJobId]);
 
@@ -330,171 +479,79 @@ export default function SchedulePageClient({
 		return (
 			<div className="web-page-panel max-w-2xl">
 				<ScheduleIntro mode="local" />
-				<div className="flex justify-center pt-3 sm:pt-4">
-					<div className="w-full">
-						<ManualRunView
-							isRunning={isRunning || runNowMutation.isPending}
-							onRunNow={handleRunNow}
-							mode="local"
-						/>
-					</div>
+				<div className="pt-5 sm:pt-6">
+					<ManualRunView
+						isRunning={isRunning || runNowMutation.isPending}
+						onRunNow={handleRunNow}
+						mode="local"
+					/>
 				</div>
 			</div>
 		);
 	}
 
 	return (
-		<div className="web-page-panel max-w-2xl">
+		<div className="web-page-panel max-w-2xl space-y-6 sm:space-y-7">
 			<ScheduleIntro mode="self-host" />
-			<>
-				{cronTimingQuery.isLoading ? (
-					<div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2">
-						{TIMING_SKELETON_KEYS.map((key) => (
-							<div key={key} className={cn(formPanelClassName, "px-4 py-4")}>
-								<Skeleton className="mb-2 h-4 w-24" />
-								<Skeleton className="h-6 w-32" />
-							</div>
-						))}
-					</div>
-				) : (
-					<div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2">
-						<div className={cn(formPanelClassName, "px-4 py-4")}>
-							<div className="mb-1 flex items-center gap-2">
-								<Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-								<span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-									Next Scheduled Run
-								</span>
-							</div>
-							<p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-								{currentSchedule && cronTimingQuery.data?.nextRun
-									? formatRelativeTime(cronTimingQuery.data.nextRun)
-									: "Not scheduled"}
-							</p>
+			{cronTimingQuery.isLoading ? (
+				<div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2">
+					{TIMING_SKELETON_KEYS.map((key) => (
+						<div key={key} className={cn(formPanelClassName, "px-5 py-5")}>
+							<Skeleton className="mb-2 h-4 w-24" />
+							<Skeleton className="h-6 w-32" />
 						</div>
+					))}
+				</div>
+			) : (
+				<TimingSummary
+					currentSchedule={currentSchedule}
+					nextRun={cronTimingQuery.data?.nextRun}
+					lastPromptRun={cronTimingQuery.data?.lastPromptRun}
+				/>
+			)}
 
-						<div className={cn(formPanelClassName, "px-4 py-4")}>
-							<div className="mb-1 flex items-center gap-2">
-								<PlayCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
-								<span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-									Last Prompt Run
-								</span>
-							</div>
-							<p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-								{cronTimingQuery.data?.lastPromptRun
-									? formatAbsoluteTime(cronTimingQuery.data.lastPromptRun)
-									: "Never"}
-							</p>
-						</div>
+			{scheduleQuery.isLoading ? (
+				<div className="space-y-4">
+					<div className="space-y-2">
+						<Skeleton className="h-5 w-36" />
+						<Skeleton className="h-4 w-64" />
 					</div>
-				)}
-
-				{scheduleQuery.isLoading ? (
-					<div className="space-y-3">
-						<Skeleton className="h-8 w-48" />
-						{SCHEDULE_SKELETON_KEYS.map((key) => (
-							<div
-								key={key}
-								className={cn(
-									formPanelClassName,
-									"flex items-center justify-between px-4 py-4",
-								)}
-							>
-								<div className="space-y-2">
-									<Skeleton className="h-4 w-36" />
-									<Skeleton className="h-3 w-56" />
-								</div>
-								<Skeleton className="h-4 w-4 rounded-full" />
-							</div>
-						))}
-					</div>
-				) : (
-					<>
-						{currentSchedule ? (
-							<div className="flex flex-col gap-3 rounded-[24px] border border-blue-200/70 bg-white px-4 py-4 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] dark:border-blue-900/60 dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)] sm:flex-row sm:items-center sm:justify-between">
-								<div className="flex min-w-0 items-center gap-2">
-									<Check className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-									<span className="break-words text-sm font-medium text-blue-900 dark:text-blue-100">
-										Active: {getScheduleLabel(currentSchedule)}
-									</span>
-								</div>
-								<Button
-									variant="outline"
-									size="sm"
-									onClick={handleDisable}
-									disabled={saving}
-									className={cn(
-										formSecondaryButtonClassName,
-										"h-10 w-auto border-red-200/80 bg-red-50/80 px-4 text-red-700 hover:bg-red-100 hover:text-red-800 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300 dark:hover:bg-red-950/50",
-									)}
-								>
-									{saving ? (
-										<Loader2 className="h-4 w-4 animate-spin" />
-									) : (
-										"Disable"
-									)}
-								</Button>
-							</div>
-						) : null}
-
-						<div className="space-y-2">
-							<h2 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-								Recurring schedule
-							</h2>
+					{SCHEDULE_SKELETON_KEYS.map((key) => (
+						<div
+							key={key}
+							className={cn(
+								formPanelClassName,
+								"flex items-center justify-between px-4 py-4",
+							)}
+						>
 							<div className="space-y-2">
-								{SCHEDULE_OPTIONS.map((option) => (
-									<button
-										key={option.value}
-										type="button"
-										onClick={() => setSelected(option.value)}
-										className={`flex w-full items-center justify-between ${formPanelClassName} px-4 py-4 text-left transition-[border-color,background-color,box-shadow] duration-200 ${
-											selected === option.value
-												? "border-blue-300 bg-blue-50/50 dark:border-blue-700 dark:bg-blue-950/20"
-												: "border-gray-100/80 hover:border-gray-200 hover:bg-stone-50 dark:border-gray-800 dark:hover:border-gray-700 dark:hover:bg-neutral-900"
-										}`}
-									>
-										<div>
-											<span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-												{option.label}
-											</span>
-											<p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-												{option.description}
-											</p>
-										</div>
-										{selected === option.value ? (
-											<div className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-blue-600">
-												<Check className="h-3 w-3 text-white" />
-											</div>
-										) : null}
-									</button>
-								))}
+								<Skeleton className="h-4 w-36" />
+								<Skeleton className="h-3 w-56" />
 							</div>
+							<Skeleton className="h-4 w-4 rounded-full" />
 						</div>
-
-						{hasChanges ? (
-							<div className="flex justify-stretch sm:justify-end">
-								<Button
-									onClick={handleSave}
-									disabled={saving}
-									className="gap-2"
-								>
-									{saving ? (
-										<Loader2 className="h-4 w-4 animate-spin" />
-									) : (
-										"Save Schedule"
-									)}
-								</Button>
-							</div>
-						) : null}
-					</>
-				)}
-			</>
+					))}
+				</div>
+			) : (
+				<ScheduleOptionsSection
+					currentSchedule={currentSchedule}
+					selected={selected}
+					saving={saving}
+					hasChanges={hasChanges}
+					onSelect={setSelected}
+					onDisable={handleDisable}
+					onSave={handleSave}
+				/>
+			)}
 
 			{canRunNow && (
-				<ManualRunView
-					isRunning={isRunning || runNowMutation.isPending}
-					onRunNow={handleRunNow}
-					mode="self-host"
-				/>
+				<div className="pt-1 sm:pt-2">
+					<ManualRunView
+						isRunning={isRunning || runNowMutation.isPending}
+						onRunNow={handleRunNow}
+						mode="self-host"
+					/>
+				</div>
 			)}
 		</div>
 	);

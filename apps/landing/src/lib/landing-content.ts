@@ -4,7 +4,6 @@ import {
 	Database,
 	Eye,
 	GitBranch,
-	Globe,
 	KeyRound,
 	Radar,
 	SearchCheck,
@@ -34,6 +33,18 @@ export type FeatureItem = {
 
 export const FEATURE_ITEMS: FeatureItem[] = [
 	{
+		title: "Free to Run Locally",
+		description:
+			"Install once and run entirely on your own machine — no subscription, no usage limits.",
+		icon: KeyRound,
+	},
+	{
+		title: "Your Own Provider Accounts",
+		description:
+			"Log in to each AI provider with your own account. Sessions stay on your machine.",
+		icon: ShieldCheck,
+	},
+	{
 		title: "AI Visibility Tracking",
 		description: "See where your brand appears and where it disappears.",
 		icon: Eye,
@@ -46,19 +57,13 @@ export const FEATURE_ITEMS: FeatureItem[] = [
 	{
 		title: "Multi-Provider Prompt Testing",
 		description:
-			"Run one prompt set across ChatGPT, Claude, Gemini, and Perplexity.",
+			"Run one prompt set across ChatGPT, Claude, Gemini, Perplexity, and AI Overview.",
 		icon: SearchCheck,
 	},
 	{
 		title: "Self-hostable Architecture",
 		description: "Deploy web, worker, queue, and analytics in your own infra.",
 		icon: Boxes,
-	},
-	{
-		title: "Proxy-aware Scraping",
-		description:
-			"Use isolated workers with proxy scoring, retries, and cooldown control.",
-		icon: Globe,
 	},
 	{
 		title: "ClickHouse Analytics",
@@ -104,14 +109,22 @@ export const ARCHITECTURE_NODES = [
 export const STORAGE_KEY = "oneglanse-landing-theme" as const;
 
 export const METHOD_POINTS = [
-	"OneGlanse captures model web UI outputs through logged-out sessions for real user-view results.",
-	"Scraping runs through residential proxies to reduce geo bias and improve coverage stability.",
-	"Claude is excluded from UI scraping and is integrated through the official Claude API only.",
-	"UI answers and API answers can differ in ranking, wording, and citation behavior for the same prompt.",
+	"All five providers — ChatGPT, Gemini, Perplexity, Claude, and Google AI Overview — are monitored through their real web UIs, not model APIs.",
+	"You log in to each provider with your own account. Sessions are stored locally on your machine and never leave your infrastructure.",
+	"Captured responses are analyzed using your own OpenAI or Anthropic API key. No data passes through any third-party server.",
+	"UI responses can differ from API responses in ranking, wording, and citation behavior for the same prompt.",
 	"Most GEO vendors do not disclose collection methods, refresh cadence, or model provenance details.",
 ] as const;
 
 export const OPEN_SOURCE_POINTS: Array<{ text: string; icon: LucideIcon }> = [
+	{
+		text: "Free to run locally — no subscription, no API calls to third-party servers.",
+		icon: KeyRound,
+	},
+	{
+		text: "Use your own provider accounts. Sessions live on your machine, never elsewhere.",
+		icon: ShieldCheck,
+	},
 	{
 		text: "Fully open-source codebase with auditable commits and change history.",
 		icon: GitBranch,
@@ -123,14 +136,6 @@ export const OPEN_SOURCE_POINTS: Array<{ text: string; icon: LucideIcon }> = [
 	{
 		text: "Full data ownership for prompts, responses, citations, and analytics.",
 		icon: Database,
-	},
-	{
-		text: "Transparent provider integrations with no vendor lock-in.",
-		icon: KeyRound,
-	},
-	{
-		text: "Traceable pipeline from prompt execution to final scored metrics.",
-		icon: ShieldCheck,
 	},
 ];
 

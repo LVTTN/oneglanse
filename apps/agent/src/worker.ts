@@ -1,17 +1,41 @@
-import { getQueueName, waitForRedis } from "@oneglanse/services";
+import { getQueueName, redis, waitForRedis } from "@oneglanse/services";
 import { PROVIDER_LIST } from "@oneglanse/types";
 import { logger } from "@oneglanse/utils";
 import { Worker } from "bullmq";
 import { env } from "./env.js";
 import { runWithProviderExecutionGate } from "./worker/executionGate.js";
-import { handleJob } from "./worker/jobHandler.js";
+import { handleJob, stopActiveProviderRun } from "./worker/jobHandler.js";
 
 // Exported so index.ts can call worker.close() during graceful shutdown.
 export let workers: Worker[] = [];
 const WORKER_LOCK_DURATION_MS = 4 * 60 * 60 * 1000;
+const PROVIDER_STOP_CHANNEL = "oneglanse:agent:provider-stop";
 
 async function startWorkers() {
 	await waitForRedis();
+	const stopSubscriber = redis.duplicate();
+	await stopSubscriber.connect();
+	await stopSubscriber.subscribe(PROVIDER_STOP_CHANNEL);
+	stopSubscriber.on("message", (channel, message) => {
+		if (channel !== PROVIDER_STOP_CHANNEL) return;
+		void (async () => {
+			try {
+				const payload = JSON.parse(message) as {
+					jobGroupId?: string;
+					provider?: (typeof PROVIDER_LIST)[number];
+				};
+				if (!payload.jobGroupId || !payload.provider) {
+					return;
+				}
+				await stopActiveProviderRun({
+					jobGroupId: payload.jobGroupId,
+					provider: payload.provider,
+				});
+			} catch (error) {
+				logger.error("[agent] failed to process provider stop request", error);
+			}
+		})();
+	});
 
 	const connection = {
 		host: env.REDIS_HOST,

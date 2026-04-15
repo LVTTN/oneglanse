@@ -1,11 +1,14 @@
-import { redis } from "@oneglanse/services";
+import { cancelProviderRun, redis } from "@oneglanse/services";
+import { PROVIDER_LIST } from "@oneglanse/types";
 import { z } from "zod";
+import { validWorkspace } from "../../middleware/validWorkspace";
 import { createRateLimiter } from "../../middleware/rateLimit";
 import {
 	authorizedWorkspaceProcedure,
+	protectedProcedure,
 } from "../../procedures";
-import { submitAgentRun } from "../_shared/submitAgentRun";
 import { createTRPCRouter } from "../../trpc";
+import { submitAgentRun } from "../_shared/submitAgentRun";
 
 export const agentRouter = createTRPCRouter({
 	run: authorizedWorkspaceProcedure
@@ -39,5 +42,21 @@ export const agentRouter = createTRPCRouter({
 				status: parsed?.status === "completed" ? "completed" : "pending",
 				response: parsed,
 			};
+		}),
+
+	stopProvider: protectedProcedure
+		.input(
+			z.object({
+				workspaceId: z.string(),
+				jobId: z.string(),
+				provider: z.enum(PROVIDER_LIST),
+			}),
+		)
+		.use(validWorkspace)
+		.mutation(async ({ input }) => {
+			return cancelProviderRun({
+				jobGroupId: input.jobId,
+				provider: input.provider,
+			});
 		}),
 });
