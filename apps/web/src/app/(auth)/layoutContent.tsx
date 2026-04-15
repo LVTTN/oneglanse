@@ -11,7 +11,6 @@ import type { Workspace } from "@oneglanse/db";
 import {
 	type AppMode,
 	canAccessPeopleInMode,
-	canRunPromptsNowInMode,
 	isInteractiveAuthAllowedInMode,
 } from "@oneglanse/types";
 import { SidebarTrigger } from "@oneglanse/ui";
@@ -38,7 +37,7 @@ function getPageHeader(
 	}
 
 	if (pathname.startsWith("/schedule")) {
-		return canRunPromptsNowInMode(appMode) ? "Run Prompts" : "Schedule";
+		return "Schedule";
 	}
 
 	if (pathname.startsWith("/people")) {

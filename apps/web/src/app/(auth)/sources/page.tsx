@@ -252,7 +252,7 @@ export default function SourcesPage(): React.JSX.Element {
 			<div className="web-page-wide-inner ui-stagger space-y-6 sm:space-y-8">
 				<SectionHeading
 					as="h2"
-					title="Answer Signals"
+					title="Overview"
 					description="See which domains, URLs, and excerpts are shaping AI model answers across your tracked prompts."
 					titleClassName="text-lg font-semibold tracking-tight text-gray-900 dark:text-gray-100"
 					descriptionClassName="mt-1 text-sm font-normal text-gray-500 dark:text-gray-400"

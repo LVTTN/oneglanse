@@ -1,27 +1,26 @@
+import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { createInterface } from "node:readline/promises";
 import zlib from "node:zlib";
 import {
 	attachTerminationHandler,
 	buildLocalRuntimeEnv,
 	buildLocalWorkspacePackages,
-	edgeNetworkName,
 	ensureEnvFiles,
 	ensureLocalCamoufoxRuntime,
-	ensureDockerNetwork,
 	openBrowser,
 	repoRoot,
-	runCommand,
 	spawnCommand,
+	terminateLocalProcesses,
 	waitForChildExit,
 	waitForHttp,
-	terminateLocalProcesses,
 } from "./lib/runtime.mjs";
 
 const PROVIDERS = ["chatgpt", "perplexity", "gemini", "google", "claude"];
 const localAppUrl = "http://localhost:3000";
-const localProvidersUrl = `${localAppUrl}/providers`;
+const localProvidersUrl = `${localAppUrl}/providers/local`;
 
 function getAuthRootDir() {
 	const configured = process.env.AGENT_AUTH_ROOT_DIR?.trim();
@@ -46,18 +45,81 @@ function formatBytes(bytes) {
 	return `${rounded} ${units[unitIndex]}`;
 }
 
-async function uploadExistingSessionsIfPresent(uploadUrl, uploadToken) {
-	const uploaded = [];
-	const authRootDir = getAuthRootDir();
-	const sessionFiles = PROVIDERS.map((provider) => ({
+function getSessionFile(provider) {
+	return path.join(
+		getAuthRootDir(),
+		"sessions",
 		provider,
-		sessionFile: path.join(
-			authRootDir,
-			"sessions",
+		`${provider}-auth.json`,
+	);
+}
+
+async function captureSessionSnapshot() {
+	const snapshot = new Map();
+
+	for (const provider of PROVIDERS) {
+		const sessionFile = getSessionFile(provider);
+		if (!existsSync(sessionFile)) {
+			continue;
+		}
+
+		const rawSession = await readFile(sessionFile);
+		snapshot.set(provider, {
+			hash: createHash("sha256").update(rawSession).digest("hex"),
+			size: rawSession.length,
+		});
+	}
+
+	return snapshot;
+}
+
+function getChangedProviders(beforeSnapshot, afterSnapshot) {
+	return PROVIDERS.filter((provider) => {
+		const before = beforeSnapshot.get(provider);
+		const after = afterSnapshot.get(provider);
+
+		if (!before && !after) {
+			return false;
+		}
+
+		if (!before || !after) {
+			return true;
+		}
+
+		return before.hash !== after.hash || before.size !== after.size;
+	});
+}
+
+async function prompt(question) {
+	if (!process.stdin.isTTY || !process.stdout.isTTY) {
+		return null;
+	}
+
+	const rl = createInterface({
+		input: process.stdin,
+		output: process.stdout,
+	});
+
+	try {
+		return (await rl.question(question)).trim();
+	} finally {
+		rl.close();
+	}
+}
+
+async function uploadExistingSessionsIfPresent(
+	uploadUrl,
+	uploadToken,
+	providers = null,
+) {
+	const uploaded = [];
+	const selectedProviders = providers ?? PROVIDERS;
+	const sessionFiles = selectedProviders
+		.map((provider) => ({
 			provider,
-			`${provider}-auth.json`,
-		),
-	})).filter(({ sessionFile }) => existsSync(sessionFile));
+			sessionFile: getSessionFile(provider),
+		}))
+		.filter(({ sessionFile }) => existsSync(sessionFile));
 
 	if (sessionFiles.length === 0) {
 		return uploaded;
@@ -201,26 +263,8 @@ async function main() {
 	await ensureLocalCamoufoxRuntime();
 	await buildLocalWorkspacePackages();
 	const localEnv = buildLocalRuntimeEnv(localAppUrl);
-	if (uploadUrl && uploadToken) {
-		localEnv.AGENT_AUTH_UPLOAD_URL = uploadUrl;
-		localEnv.AGENT_AUTH_UPLOAD_TOKEN = uploadToken;
-	}
-
-	await ensureDockerNetwork(edgeNetworkName);
-	await runCommand("docker", [
-		"compose",
-		"up",
-		"-d",
-		"--build",
-		"--force-recreate",
-		"--wait",
-		"db",
-		"clickhouse",
-		"redis",
-	]);
-	await runCommand("pnpm", ["db:migrate"], { env: localEnv });
 	await terminateLocalProcesses([repoRoot, "@oneglanse/web", "next dev"]);
-	await terminateLocalProcesses([repoRoot, "@oneglanse/agent", "dev"]);
+	const sessionSnapshotBefore = await captureSessionSnapshot();
 
 	const webChild = spawnCommand(
 		"pnpm",
@@ -239,27 +283,67 @@ async function main() {
 			env: localEnv,
 		},
 	);
-	const agentChild = spawnCommand("pnpm", ["--filter", "@oneglanse/agent", "dev"], {
-		env: localEnv,
-	});
-
 	const stopWeb = attachTerminationHandler(webChild);
-	const stopAgent = attachTerminationHandler(agentChild);
 
 	try {
-		await waitForHttp(localAppUrl);
+		await waitForHttp(localProvidersUrl);
 		console.log(`Opening ${localProvidersUrl}`);
 		openBrowser(localProvidersUrl);
+		console.log(
+			"Finish provider sign-in in the browser, then return here and press Enter.",
+		);
+		await prompt("Press Enter when you are done connecting providers. ");
+
+		const sessionSnapshotAfter = await captureSessionSnapshot();
+		const changedProviders = getChangedProviders(
+			sessionSnapshotBefore,
+			sessionSnapshotAfter,
+		);
+
+		if (changedProviders.length === 0) {
+			console.log("No new or updated provider sessions were detected.");
+			if (uploadUrl && uploadToken) {
+				console.log(
+					"Skipping upload because no local provider sessions changed during this run.",
+				);
+			}
+			return;
+		}
+
+		console.log(
+			`Saved or updated provider sessions: ${changedProviders.join(", ")}`,
+		);
+
+		if (!uploadUrl || !uploadToken) {
+			console.log(
+				"Upload is not configured. Run `pnpm upload:vps` later after setting AGENT_AUTH_UPLOAD_TOKEN and ONEGLANSE_VPS_IP (or AGENT_AUTH_UPLOAD_URL).",
+			);
+			return;
+		}
+
+		const uploadAnswer = (
+			await prompt("Upload these sessions to the VPS now? [y/N] ")
+		)?.toLowerCase();
+
+		if (uploadAnswer === "y" || uploadAnswer === "yes") {
+			await uploadExistingSessionsIfPresent(
+				uploadUrl,
+				uploadToken,
+				changedProviders,
+			);
+			return;
+		}
+
+		console.log("Skipped upload. Local sessions remain saved on this machine.");
 	} catch (error) {
 		stopWeb();
-		stopAgent();
 		throw error;
+	} finally {
+		stopWeb();
+		try {
+			await waitForChildExit(webChild, "Web dev");
+		} catch {}
 	}
-
-	await Promise.all([
-		waitForChildExit(webChild, "Web dev"),
-		waitForChildExit(agentChild, "Agent dev"),
-	]);
 }
 
 main().catch((error) => {
