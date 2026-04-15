@@ -1,52 +1,16 @@
 # OneGlanse
 
-**The open-source GEO tracker.** Know exactly how your brand appears inside ChatGPT, Gemini, Perplexity, Claude, and Google AI Overview — self-hosted, free forever, and your data never leaves your own infrastructure.
+**The open-source GEO tracker. Free to run. Fully self-hosted. Your data never leaves your machine.**
 
-[App](https://app.oneglanse.com) · [Docs](https://docs.oneglanse.com) · [oneglanse.com](https://oneglanse.com)
+OneGlanse monitors how your brand appears inside real AI products — ChatGPT, Gemini, Perplexity, Claude, and Google AI Overview. It is open source, MIT licensed, and costs nothing to run on your own machine or VPS.
 
----
+**It doesn't call the model API.** It opens the actual ChatGPT, Gemini, Perplexity, Claude, and AI Overview interfaces in a real browser — the same way a user would — and captures exactly what gets rendered: the full response, inline citations, recommended sources, and how your brand is positioned relative to competitors. API responses omit all of this. OneGlanse captures what users actually see.
 
-<img width="100%" alt="OneGlanse Dashboard" src="https://github.com/user-attachments/assets/d5438aff-67bc-4556-baa8-939906a59c02" />
+**Your data stays on your machine.** Responses, analytics, and auth sessions are stored in a PostgreSQL and ClickHouse instance you own and control. Nothing is sent to any external server. Response analysis calls go directly from your infrastructure to OpenAI or Anthropic using your own API key.
 
-**Your GEO score, top competitor, rank position, and most-cited sources — in one view.** The dashboard shows your overall visibility across all AI models, which competitor co-appears most often alongside your brand, your average rank position, and which domains the AI products cite when your category comes up.
+**You use your own provider accounts.** OneGlanse authenticates to ChatGPT, Gemini, Perplexity, Claude, and Google using your own existing logins. No shared credentials. No scraped accounts. Your sessions, stored locally.
 
----
-
-<img width="100%" alt="OneGlanse Prompt Responses" src="https://github.com/user-attachments/assets/09fae3f5-4e3c-4920-9d19-c32d9a1da0d5" />
-
-**See exactly what AI says about you — and how it perceives you.** Every prompt response is captured from the real product UI (not a raw API call), scored for GEO, sentiment, visibility, and rank position. The perception panel extracts how models frame your brand: pricing signal, what you're best known for, and the specific claims they repeat most.
-
----
-
-<img width="100%" alt="OneGlanse Source Intelligence" src="https://github.com/user-attachments/assets/caace32a-1e68-44e8-9b71-f582e9dc9de0" />
-
-**Know which sources drive your AI presence — and how you stack up against competitors.** See every article and domain that's being cited about your brand, with the exact page titles. The competitor chart tracks where you sit against rivals across Presence, Recommendation, and Sentiment.
-
----
-
-<img width="100%" alt="OneGlanse Analytics" src="https://github.com/user-attachments/assets/aac7d04b-e7b9-4e58-b780-2afd33b6c960" />
-
-**Per-prompt performance, not just averages.** Every prompt you track gets its own GEO score, sentiment, visibility percentage, and rank position — so you know exactly which queries you own and which ones you're losing.
-
----
-
-## Features
-
-- **5 providers** — ChatGPT, Gemini, Perplexity, Claude, Google AI Overview
-- **UI-first capture** — responses captured from the real product interface, not model APIs. What you see is what users see.
-- **GEO scoring** — visibility, sentiment, rank position, and recommendation type tracked per prompt over time
-- **Competitor co-mentions** — see which brands appear alongside yours and how they're framed
-- **Citation tracking** — which domains and articles the AI is citing for your category
-- **AI perception analysis** — how models frame your pricing, key claims, and positioning
-- **Your own LLM key** — response analysis calls go directly from your infrastructure to OpenAI or Anthropic. No third party in the middle.
-- **ClickHouse analytics** — high-volume time-series storage built for prompt tracking at scale
-- **Self-hosted, free forever** — full stack runs on any VPS with a single command
-
----
-
-## Quick Start
-
-**Requirements:** Node.js 20+, pnpm 10+, Docker
+**One command to start:**
 
 ```bash
 git clone https://github.com/aryamantodkar/oneglanse
@@ -55,9 +19,53 @@ pnpm install
 pnpm local
 ```
 
-Opens at [http://localhost:3000](http://localhost:3000). On first run the script handles everything: creates `.env`, starts Postgres / ClickHouse / Redis, runs migrations, and bootstraps the browser runtime. Go to `/providers` to connect your AI provider accounts.
+Opens at [http://localhost:3000](http://localhost:3000). Everything is handled on first run: creates `.env`, starts Postgres / ClickHouse / Redis via Docker, runs migrations, and bootstraps the browser runtime. Go to `/providers` to connect your AI accounts.
 
-For VPS self-hosting, provider auth setup, and all configuration options → **[docs.oneglanse.com](https://docs.oneglanse.com)**
+[App](https://app.oneglanse.com) · [Docs](https://docs.oneglanse.com) · [oneglanse.com](https://oneglanse.com)
+
+---
+
+<img width="100%" alt="OneGlanse Dashboard" src="https://github.com/user-attachments/assets/d5438aff-67bc-4556-baa8-939906a59c02" />
+
+**Your overall GEO score, top competitor, rank position, and most-cited sources — in one view.** The dashboard shows your visibility score across all AI models, which competitor co-appears most often alongside your brand, your average rank position across all prompts, and which domains the AI products cite when your category comes up.
+
+---
+
+<img width="100%" alt="OneGlanse Prompt Responses" src="https://github.com/user-attachments/assets/09fae3f5-4e3c-4920-9d19-c32d9a1da0d5" />
+
+**The actual AI response, scored.** Every captured response is tagged with a GEO score, sentiment score, visibility percentage, and rank position. The perception panel on the right extracts how the model is framing your brand: what it says your pricing signal is, what you're best known for, and what specific claims it repeats most often about you.
+
+---
+
+<img width="100%" alt="OneGlanse Source Intelligence" src="https://github.com/user-attachments/assets/caace32a-1e68-44e8-9b71-f582e9dc9de0" />
+
+**Which sources drive your AI presence — and how you compare.** The left panel shows every article and domain being cited about your brand, with the exact article title so you know why that domain ranks. The competitor chart on the right tracks your position against rivals across three dimensions: Presence (are you mentioned), Recommendation (are you recommended), and Sentiment (how positively you're framed).
+
+---
+
+<img width="100%" alt="OneGlanse Analytics" src="https://github.com/user-attachments/assets/aac7d04b-e7b9-4e58-b780-2afd33b6c960" />
+
+**Per-prompt breakdown, not aggregated averages.** Every prompt you track gets its own row: GEO score, sentiment, visibility percentage, and rank position. You can see exactly which queries you own and which ones you're losing — and track how both change over time.
+
+---
+
+## Features
+
+- **5 providers** — ChatGPT, Gemini, Perplexity, Claude, Google AI Overview
+- **UI-first capture** — browser automation against real product interfaces, not the API. What users see is what you get.
+- **GEO scoring** — visibility, sentiment, rank position, and recommendation type, tracked per prompt over time
+- **Competitor co-mentions** — see which brands appear alongside yours and how they're framed
+- **Citation tracking** — which domains and articles AI products are citing for your category
+- **AI perception analysis** — how models characterize your pricing, key claims, and brand positioning
+- **Your own LLM key** — response analysis uses your OpenAI or Anthropic key, called directly from your infrastructure
+- **ClickHouse analytics** — high-volume time-series storage built for prompt tracking at scale
+- **Self-hosted, free forever** — full stack deploys to any VPS with a single command
+
+---
+
+## Self-Hosting
+
+For VPS deployment, recurring scheduling, provider auth transfer, and all configuration options → **[docs.oneglanse.com](https://docs.oneglanse.com)**
 
 ---
 
