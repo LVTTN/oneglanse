@@ -1,6 +1,6 @@
 "use client";
 import { LineChart } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card } from "../card.js";
 import type { DashboardCompetitorData } from "./types.js";
 
@@ -88,6 +88,7 @@ export function BrandComparisonChart({
 }) {
 	const svgRef = useRef<SVGSVGElement>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
+	const [containerWidth, setContainerWidth] = useState(0);
 
 	const [hoveredPoint, setHoveredPoint] = useState<{
 		name: string;
@@ -98,6 +99,22 @@ export function BrandComparisonChart({
 		color: string;
 	} | null>(null);
 	const [hoveredBrand, setHoveredBrand] = useState<string | null>(null);
+
+	useEffect(() => {
+		const element = containerRef.current;
+		if (!element) return;
+
+		const updateWidth = () => {
+			setContainerWidth(element.getBoundingClientRect().width);
+		};
+
+		updateWidth();
+
+		const observer = new ResizeObserver(() => updateWidth());
+		observer.observe(element);
+
+		return () => observer.disconnect();
+	}, []);
 
 	const rivals = competitors
 		.filter((c) => !c.isBrand)
@@ -193,6 +210,7 @@ export function BrandComparisonChart({
 	const bottom = 44;
 	const plotWidth = width - left - right;
 	const plotHeight = height - top - bottom;
+	const isCompactChart = containerWidth > 0 && containerWidth < 640;
 
 	const xFor = (index: number) =>
 		left + (index * plotWidth) / Math.max(1, METRIC_CONFIG.length - 1);
@@ -241,111 +259,110 @@ export function BrandComparisonChart({
 				</span>
 			</div>
 
-			<div className="grid min-w-0 grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_260px]">
+			<div className="grid min-w-0 grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_220px] xl:grid-cols-[minmax(0,1fr)_240px]">
 				<div
 					ref={containerRef}
 					className="relative min-w-0"
 					onMouseLeave={() => setHoveredPoint(null)}
 				>
-					<div className="overflow-x-auto [-webkit-overflow-scrolling:touch] [overscroll-behavior-x:contain]">
-						<svg
-							ref={svgRef}
-							viewBox={`0 0 ${width} ${height}`}
-							className="h-[280px] w-full min-w-[360px] sm:min-w-[560px] lg:min-w-[680px]"
-							role="img"
-							aria-label="Brand comparison chart"
-						>
-							{[0, 25, 50, 75, 100].map((tick) => {
-								const y = yFor(tick);
-								return (
-									<g key={`grid-${tick}`}>
-										<line
-											x1={left}
-											y1={y}
-											x2={width - right}
-											y2={y}
-											stroke="currentColor"
-											className="text-gray-200 dark:text-gray-800"
-											strokeDasharray={tick === 0 ? "0" : "3 5"}
-										/>
-										<text
-											x={left - 10}
-											y={y + 4}
-											textAnchor="end"
-											className="fill-gray-400 text-[10px]"
-										>
-											{tick}
-										</text>
-									</g>
-								);
-							})}
+					<svg
+						ref={svgRef}
+						viewBox={`0 0 ${width} ${height}`}
+						className="h-[250px] w-full sm:h-[270px] lg:h-[280px]"
+						role="img"
+						aria-label="Brand comparison chart"
+					>
+						{[0, 25, 50, 75, 100].map((tick) => {
+							const y = yFor(tick);
+							return (
+								<g key={`grid-${tick}`}>
+									<line
+										x1={left}
+										y1={y}
+										x2={width - right}
+										y2={y}
+										stroke="currentColor"
+										className="text-gray-200 dark:text-gray-800"
+										strokeDasharray={tick === 0 ? "0" : "3 5"}
+									/>
+									<text
+										x={left - 10}
+										y={y + 4}
+										textAnchor="end"
+										className="fill-gray-400 text-[10px]"
+									>
+										{tick}
+									</text>
+								</g>
+							);
+						})}
 
-							{series.map((s, idx) => {
-								const color = getSeriesColor(idx);
-								const points = METRIC_CONFIG.map((metric, metricIndex) => ({
-									x: xFor(metricIndex),
-									y: yFor(s.values[metric.key]),
-								}));
-								const d = buildPath(points);
-								const isHovered = hoveredBrand === s.name;
-								const isFaded = hoveredBrand && hoveredBrand !== s.name;
-								return (
-									<g key={s.name}>
-										<path
-											d={d}
-											fill="none"
-											stroke={color}
-											strokeWidth={isHovered ? 4 : s.isBrand ? 3 : 2}
-											strokeLinecap="round"
-											strokeLinejoin="round"
-											opacity={isFaded ? 0.2 : s.isBrand ? 1 : 0.85}
+						{series.map((s, idx) => {
+							const color = getSeriesColor(idx);
+							const points = METRIC_CONFIG.map((metric, metricIndex) => ({
+								x: xFor(metricIndex),
+								y: yFor(s.values[metric.key]),
+							}));
+							const d = buildPath(points);
+							const isHovered = hoveredBrand === s.name;
+							const isFaded = hoveredBrand && hoveredBrand !== s.name;
+							return (
+								<g key={s.name}>
+									<path
+										d={d}
+										fill="none"
+										stroke={color}
+										strokeWidth={isHovered ? 4 : s.isBrand ? 3 : 2}
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										opacity={isFaded ? 0.2 : s.isBrand ? 1 : 0.85}
+									/>
+									{points.map((p, pointIdx) => (
+										<circle
+											key={`${s.name}-${METRIC_CONFIG[pointIdx]?.key}`}
+											cx={p.x}
+											cy={p.y}
+											r={isHovered ? 6 : s.isBrand ? 4.5 : 3.5}
+											fill={color}
+											stroke="white"
+											strokeWidth={isHovered ? 2 : 1.5}
+											className="cursor-pointer"
+											opacity={isFaded ? 0.2 : 1}
+											onMouseEnter={() => {
+												const metric = METRIC_CONFIG[pointIdx];
+												if (!metric) return;
+												const { leftPx, topPx } = getTooltipPosition(p.x, p.y);
+												setHoveredPoint({
+													name: s.name,
+													metric: metric.label,
+													value: s.values[metric.key],
+													leftPx,
+													topPx,
+													color,
+												});
+											}}
 										/>
-										{points.map((p, pointIdx) => (
-											<circle
-												key={`${s.name}-${METRIC_CONFIG[pointIdx]?.key}`}
-												cx={p.x}
-												cy={p.y}
-												r={isHovered ? 6 : s.isBrand ? 4.5 : 3.5}
-												fill={color}
-												stroke="white"
-												strokeWidth={isHovered ? 2 : 1.5}
-												className="cursor-pointer"
-												opacity={isFaded ? 0.2 : 1}
-												onMouseEnter={() => {
-													const metric = METRIC_CONFIG[pointIdx];
-													if (!metric) return;
-													const { leftPx, topPx } = getTooltipPosition(
-														p.x,
-														p.y,
-													);
-													setHoveredPoint({
-														name: s.name,
-														metric: metric.label,
-														value: s.values[metric.key],
-														leftPx,
-														topPx,
-														color,
-													});
-												}}
-											/>
-										))}
-									</g>
-								);
-							})}
+									))}
+								</g>
+							);
+						})}
 
-							{METRIC_CONFIG.map((metric, idx) => (
-								<text
-									key={metric.key}
-									x={xFor(idx)}
-									y={height - 14}
-									textAnchor="middle"
-									className="fill-gray-500 text-[11px] font-medium"
-								>
-									{metric.label}
-								</text>
-							))}
-						</svg>
-					</div>
+						{METRIC_CONFIG.map((metric, idx) => (
+							<text
+								key={metric.key}
+								x={xFor(idx)}
+								y={height - 14}
+								textAnchor="middle"
+								className="fill-gray-500 text-[11px] font-medium"
+							>
+								{isCompactChart && metric.key === "recommendation"
+									? "Recom."
+									: isCompactChart && metric.key === "rankStrength"
+										? "Rank"
+										: metric.label}
+							</text>
+						))}
+					</svg>
 
 					{hoveredPoint && !hoveredBrand && (
 						<div

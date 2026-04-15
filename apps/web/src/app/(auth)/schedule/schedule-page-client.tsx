@@ -15,7 +15,7 @@ import {
 } from "@oneglanse/types";
 import { Button, Skeleton, toast } from "@oneglanse/ui";
 import { cn } from "@oneglanse/utils";
-import { Calendar, Check, Clock, Loader2, PlayCircle, Zap } from "lucide-react";
+import { Calendar, Check, Loader2, PlayCircle, Zap } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 function localHourToUTC(localHour: number): number {
@@ -310,20 +310,6 @@ export default function SchedulePageClient({
 	if (!canConfigureSchedule) {
 		return (
 			<div className="web-page-panel max-w-2xl">
-				<div>
-					<div className="mb-1 flex items-center gap-2">
-						<Clock className="h-5 w-5 text-gray-500" />
-						<h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-							Run Prompts
-						</h1>
-					</div>
-					<p className="text-sm text-gray-500 dark:text-gray-400">
-						Local mode supports on-demand runs while your machine is active.
-					</p>
-					<p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-						Scheduling is available in the cloud and self-host versions.
-					</p>
-				</div>
 				<div className="flex justify-center pt-3 sm:pt-4">
 					<div className="w-full">
 						<ManualRunView
@@ -339,18 +325,6 @@ export default function SchedulePageClient({
 
 	return (
 		<div className="web-page-panel max-w-2xl">
-			<div>
-				<div className="mb-1 flex items-center gap-2">
-					<Clock className="h-5 w-5 text-gray-500" />
-					<h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-						Prompt Schedule
-					</h1>
-				</div>
-				<p className="text-sm text-gray-500 dark:text-gray-400">
-					Configure recurring prompt runs across your connected AI providers.
-				</p>
-			</div>
-
 			<>
 				{cronTimingQuery.isLoading ? (
 					<div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2">
