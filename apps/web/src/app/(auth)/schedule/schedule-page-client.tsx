@@ -493,6 +493,13 @@ export default function SchedulePageClient({
 	return (
 		<div className="web-page-panel max-w-2xl space-y-6 sm:space-y-7">
 			<ScheduleIntro mode="self-host" />
+			{canRunNow && (
+				<ManualRunView
+					isRunning={isRunning || runNowMutation.isPending}
+					onRunNow={handleRunNow}
+					mode="self-host"
+				/>
+			)}
 			{cronTimingQuery.isLoading ? (
 				<div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2">
 					{TIMING_SKELETON_KEYS.map((key) => (
@@ -544,15 +551,6 @@ export default function SchedulePageClient({
 				/>
 			)}
 
-			{canRunNow && (
-				<div className="pt-1 sm:pt-2">
-					<ManualRunView
-						isRunning={isRunning || runNowMutation.isPending}
-						onRunNow={handleRunNow}
-						mode="self-host"
-					/>
-				</div>
-			)}
 		</div>
 	);
 }

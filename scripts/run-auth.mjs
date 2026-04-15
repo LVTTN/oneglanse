@@ -19,7 +19,7 @@ import {
 } from "./lib/runtime.mjs";
 
 const PROVIDERS = ["chatgpt", "perplexity", "gemini", "google", "claude"];
-const localAppUrl = "http://localhost:3000";
+const localAppUrl = "http://localhost:3100";
 const localProvidersUrl = `${localAppUrl}/providers/local`;
 
 function getAuthRootDir() {
@@ -277,7 +277,7 @@ async function main() {
 			"--hostname",
 			"localhost",
 			"--port",
-			"3000",
+			"3100",
 		],
 		{
 			env: localEnv,

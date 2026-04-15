@@ -11,6 +11,7 @@ import {
 	CompetitiveLandscape,
 	TopSources,
 } from "@oneglanse/ui";
+import { useProviderRunToast } from "@/components/provider-run-toast";
 import { AlertTriangle, Info } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -49,6 +50,19 @@ export default function Dashboard() {
 	const { isLoading: isPromptSourcesLoading, error: promptSourcesError } =
 		usePromptSources(workspaceId);
 	const isLoading = isAnalysedPromptsLoading || isPromptSourcesLoading;
+
+	// Job run toast — shows provider progress when redirected from onboarding or schedule page
+	const jobId = searchParams.get("jobId") ?? null;
+	const jobStatusQuery = api.agent.status.useQuery(
+		{ workspaceId, jobId: jobId ?? "" },
+		{ enabled: !!jobId && !!workspaceId, refetchInterval: 2000 },
+	);
+	useProviderRunToast({
+		active: !!jobId && !!workspaceId,
+		workspaceId,
+		jobId,
+		response: jobStatusQuery.data?.response,
+	});
 
 	// Filters — persisted in URL so they survive navigation and are bookmarkable
 	const modelFilter = searchParams.get("model") ?? "All Models";

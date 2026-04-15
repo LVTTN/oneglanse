@@ -10,6 +10,8 @@ type ProviderState = "pending" | "running" | "completed" | "failed" | "stopped";
 type ProviderProgressResponse = {
 	updateId?: number;
 	providers?: Record<string, ProviderState>;
+	results?: Record<string, number>;
+	stats?: { totalPrompts?: number };
 };
 
 type DisplayPhase = "running" | "completed" | "failed" | "stopped";
@@ -22,11 +24,15 @@ function ProviderRunToastCard({
 	phase,
 	workspaceId,
 	jobId,
+	promptNumber,
+	totalPrompts,
 }: {
 	provider: Provider;
 	phase: DisplayPhase;
 	workspaceId: string;
 	jobId: string;
+	promptNumber?: number;
+	totalPrompts?: number;
 }) {
 	const [isStopping, setIsStopping] = useState(false);
 	const stopProviderMutation = api.agent.stopProvider.useMutation();
@@ -51,6 +57,8 @@ function ProviderRunToastCard({
 			phase={phase}
 			onStop={phase === "running" ? handleStop : undefined}
 			isStopping={isStopping}
+			promptNumber={promptNumber}
+			totalPrompts={totalPrompts}
 		/>
 	);
 }
@@ -60,6 +68,8 @@ function showProviderToast(args: {
 	phase: DisplayPhase;
 	workspaceId: string;
 	jobId: string;
+	promptNumber?: number;
+	totalPrompts?: number;
 }) {
 	toast.dismiss();
 	toast.custom(
@@ -69,6 +79,8 @@ function showProviderToast(args: {
 				phase={args.phase}
 				workspaceId={args.workspaceId}
 				jobId={args.jobId}
+				promptNumber={args.promptNumber}
+				totalPrompts={args.totalPrompts}
 			/>
 		),
 		{
@@ -89,15 +101,19 @@ export function useProviderRunToast(args: {
 }) {
 	const { active, workspaceId, jobId, response } = args;
 	const completionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-	const displayRef = useRef<{ provider: Provider; phase: DisplayPhase } | null>(
-		null,
-	);
+	const displayRef = useRef<{
+		provider: Provider;
+		phase: DisplayPhase;
+		promptNumber?: number;
+	} | null>(null);
 
 	const parsed = useMemo(() => {
 		const data = response as ProviderProgressResponse | null | undefined;
 		return {
 			updateId: data?.updateId ?? 0,
 			providers: (data?.providers ?? {}) as Record<string, ProviderState>,
+			results: (data?.results ?? {}) as Record<string, number>,
+			totalPrompts: data?.stats?.totalPrompts,
 		};
 	}, [response]);
 
@@ -123,6 +139,7 @@ export function useProviderRunToast(args: {
 		}
 
 		const providerStates = parsed.providers;
+		const { results, totalPrompts } = parsed;
 		const runningProviders = PROVIDER_LIST.filter(
 			(provider) => providerStates[provider] === "running",
 		);
@@ -140,10 +157,7 @@ export function useProviderRunToast(args: {
 					: providerStates[currentDisplay.provider] === "stopped"
 						? "stopped"
 						: "failed";
-			displayRef.current = {
-				provider: currentDisplay.provider,
-				phase: nextPhase,
-			};
+			displayRef.current = { provider: currentDisplay.provider, phase: nextPhase };
 			if (jobId) {
 				showProviderToast({
 					provider: currentDisplay.provider,
@@ -162,16 +176,16 @@ export function useProviderRunToast(args: {
 					(provider) => providerStates[provider] === "running",
 				);
 				if (nextRunningProvider) {
-					displayRef.current = {
-						provider: nextRunningProvider,
-						phase: "running",
-					};
+					const promptNumber = (results[nextRunningProvider] ?? 0) + 1;
+					displayRef.current = { provider: nextRunningProvider, phase: "running", promptNumber };
 					if (jobId) {
 						showProviderToast({
 							provider: nextRunningProvider,
 							phase: "running",
 							workspaceId,
 							jobId,
+							promptNumber,
+							totalPrompts,
 						});
 					}
 					return;
@@ -196,9 +210,12 @@ export function useProviderRunToast(args: {
 			return;
 		}
 
+		const promptNumber = (results[nextRunningProvider] ?? 0) + 1;
+
 		if (
 			currentDisplay?.provider === nextRunningProvider &&
-			currentDisplay.phase === "running"
+			currentDisplay.phase === "running" &&
+			currentDisplay.promptNumber === promptNumber
 		) {
 			return;
 		}
@@ -208,17 +225,16 @@ export function useProviderRunToast(args: {
 			completionTimerRef.current = null;
 		}
 
-		displayRef.current = {
-			provider: nextRunningProvider,
-			phase: "running",
-		};
+		displayRef.current = { provider: nextRunningProvider, phase: "running", promptNumber };
 		if (jobId) {
 			showProviderToast({
 				provider: nextRunningProvider,
 				phase: "running",
 				workspaceId,
 				jobId,
+				promptNumber,
+				totalPrompts,
 			});
 		}
-	}, [active, jobId, parsed.providers, workspaceId]);
+	}, [active, jobId, parsed.providers, parsed.results, parsed.totalPrompts, workspaceId]);
 }

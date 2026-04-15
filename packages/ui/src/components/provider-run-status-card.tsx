@@ -26,14 +26,19 @@ export function ProviderRunStatusCard(props: {
 	phase: ProviderRunDisplayPhase;
 	onStop?: () => void | Promise<void>;
 	isStopping?: boolean;
+	promptNumber?: number;
+	totalPrompts?: number;
 }) {
-	const { provider, phase, onStop, isStopping = false } = props;
+	const { provider, phase, onStop, isStopping = false, promptNumber, totalPrompts } = props;
 	const [subtitleIndex, setSubtitleIndex] = useState(0);
 	const title = getProviderDisplayName(provider);
 	const canStop = phase === "running" && Boolean(onStop);
 
 	const subtitle = useMemo(() => {
 		if (phase === "running") {
+			if (promptNumber !== undefined && totalPrompts !== undefined && totalPrompts > 1) {
+				return `Prompt ${promptNumber} of ${totalPrompts}`;
+			}
 			return RUNNING_SUBTITLES[subtitleIndex % RUNNING_SUBTITLES.length];
 		}
 
@@ -46,7 +51,7 @@ export function ProviderRunStatusCard(props: {
 		}
 
 		return "This provider needs another attempt.";
-	}, [phase, subtitleIndex]);
+	}, [phase, promptNumber, subtitleIndex, totalPrompts]);
 
 	useEffect(() => {
 		if (phase !== "running") return;
