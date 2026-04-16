@@ -3,6 +3,8 @@
 
 import { AppSidebar } from "@/components/app-sidebar";
 import { ProviderConnectionsPanel } from "@/components/provider-connections-panel";
+import { formToolbarButtonClassName } from "@/components/forms/auth-form-chrome";
+import { authClient } from "@/lib/auth/auth-client";
 import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
 import { useProviderConnections } from "@/lib/provider-connections/client";
 import type { ProviderConnectionsState } from "@/lib/provider-connections/types";
@@ -13,9 +15,19 @@ import {
 	canAccessPeopleInMode,
 	isInteractiveAuthAllowedInMode,
 } from "@oneglanse/types";
-import { SidebarTrigger } from "@oneglanse/ui";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+	SidebarTrigger,
+	toast,
+} from "@oneglanse/ui";
+import { cn } from "@oneglanse/utils";
+import { ChevronUp, Loader2, User2 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { WorkspaceProvider } from "./workspace-context";
 
 function getPageHeader(
@@ -57,6 +69,74 @@ function getPageHeader(
 	}
 
 	return null;
+}
+
+function UserMenu({
+	userName,
+	userEmail,
+}: {
+	userName: string;
+	userEmail: string;
+}) {
+	const router = useRouter();
+	const [isLoading, setIsLoading] = useState(false);
+
+	const handleLogout = async () => {
+		setIsLoading(true);
+		try {
+			await authClient.signOut();
+			toast.success("Signed out successfully!");
+			router.refresh();
+			router.push("/login");
+		} catch {
+			toast.error("Failed to sign out!");
+		}
+		setIsLoading(false);
+	};
+
+	return (
+		<DropdownMenu>
+			<DropdownMenuTrigger asChild>
+				<button
+					type="button"
+					className={cn(
+						formToolbarButtonClassName,
+						"flex items-center gap-2 px-4",
+					)}
+				>
+					<User2 className="h-4 w-4 shrink-0" />
+					<span className="max-w-[140px] truncate">
+						{userName || userEmail || "Account"}
+					</span>
+					<ChevronUp className="ml-auto h-4 w-4 shrink-0" />
+				</button>
+			</DropdownMenuTrigger>
+			<DropdownMenuContent
+				side="bottom"
+				align="end"
+				sideOffset={8}
+				className="min-w-0 rounded-[24px] border-transparent bg-white p-1.5 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_18px_-14px_rgba(15,23,42,0.12)] dark:bg-neutral-950 dark:shadow-[0_1px_2px_rgba(0,0,0,0.14),0_10px_24px_-16px_rgba(0,0,0,0.4)]"
+				style={{ minWidth: "180px" }}
+			>
+				<div className="px-2 py-1.5">
+					<p className="truncate text-xs font-medium text-gray-900 dark:text-gray-100">
+						{userName || "Account"}
+					</p>
+					<p className="truncate text-xs text-gray-500 dark:text-gray-400">
+						{userEmail}
+					</p>
+				</div>
+				<DropdownMenuSeparator />
+				<DropdownMenuItem onClick={() => void handleLogout()}>
+					{isLoading ? (
+						<Loader2 className="size-4 animate-spin" />
+					) : (
+						<span>Sign out</span>
+					)}
+				</DropdownMenuItem>
+			</DropdownMenuContent>
+		</DropdownMenu>
+	);
 }
 
 export default function LayoutContent({
@@ -168,6 +248,9 @@ export default function LayoutContent({
 	if (shouldShowConnectionGate) {
 		return (
 			<main className="mx-auto flex min-h-svh w-full max-w-6xl flex-col px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
+				<div className="fixed right-4 top-4 z-50">
+					<UserMenu userName={userName} userEmail={userEmail} />
+				</div>
 				<div className="mb-10 max-w-3xl">
 					<h1 className="text-[2rem] font-semibold tracking-[-0.03em] text-gray-900 dark:text-gray-100">
 						{canLaunchProvidersLocally
@@ -198,6 +281,9 @@ export default function LayoutContent({
 		return (
 			<div className="web-app-shell">
 				<main className="web-app-main bg-stone-50 dark:bg-neutral-950">
+					<div className="fixed right-4 top-4 z-50">
+						<UserMenu userName={userName} userEmail={userEmail} />
+					</div>
 					<div className="web-app-scroll">
 						{resolvedWorkspace && isWorkspaceGatewayPage ? null : children}
 					</div>
@@ -210,6 +296,9 @@ export default function LayoutContent({
 		return (
 			<div className="web-app-shell">
 				<main className="web-app-main">
+					<div className="fixed right-4 top-4 z-50">
+						<UserMenu userName={userName} userEmail={userEmail} />
+					</div>
 					<div className="web-app-scroll">{children}</div>
 				</main>
 			</div>

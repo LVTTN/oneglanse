@@ -364,6 +364,15 @@ export function AppSidebar({
 										maxWidth: "var(--radix-dropdown-menu-trigger-width)",
 									}}
 								>
+									<div className="px-2 py-1.5">
+										<p className="truncate text-xs font-medium text-gray-900 dark:text-gray-100">
+											{userName || "Account"}
+										</p>
+										<p className="truncate text-xs text-gray-500 dark:text-gray-400">
+											{userEmail}
+										</p>
+									</div>
+									<DropdownMenuSeparator />
 									<DropdownMenuItem onClick={handleLogout}>
 										{isLoading ? (
 											<Loader2 className="size-4 animate-spin" />
