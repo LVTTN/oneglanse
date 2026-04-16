@@ -369,6 +369,7 @@ export async function runWithRetryCycles(
 		signal?: AbortSignal;
 		onAttemptStart?: (attempt: BrowserAttempt) => void | Promise<void>;
 		onAttemptComplete?: () => void | Promise<void>;
+		onPromptProgress?: (current: number, total: number) => Promise<void>;
 	},
 ): Promise<AskPromptResult[]> {
 	const plog = createProviderLogger(provider);
@@ -377,7 +378,7 @@ export async function runWithRetryCycles(
 	const executor =
 		options?.executor ??
 		((attempt, currentAttemptPayload) =>
-			runAgents(currentAttemptPayload, attempt.page, provider));
+			runAgents(currentAttemptPayload, attempt.page, provider, options?.onPromptProgress));
 
 	// Scale execution timeout by prompt count so multi-prompt jobs don't time out mid-run.
 	// Setup (launch + warmup + nav) is bounded separately by AGENT_SETUP_TIMEOUT_MS.

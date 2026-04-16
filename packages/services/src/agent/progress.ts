@@ -10,6 +10,8 @@ export type ProviderExecutionStatus =
 	| "failed"
 	| "stopped";
 
+const COMPLETED_TTL_SECONDS = 120;
+
 const UPDATE_PROGRESS_LUA = `
 local raw = redis.call('GET', KEYS[1])
 if not raw then return nil end
@@ -26,8 +28,12 @@ local allDone = true
 for _, v in pairs(data['providers']) do
   if v ~= 'completed' and v ~= 'failed' and v ~= 'stopped' then allDone = false; break end
 end
-if allDone then data['status'] = 'completed' end
-redis.call('SET', KEYS[1], cjson.encode(data), 'EX', ${AGENT_PROGRESS_TTL_SECONDS})
+local ttl = ${AGENT_PROGRESS_TTL_SECONDS}
+if allDone then
+  data['status'] = 'completed'
+  ttl = ${COMPLETED_TTL_SECONDS}
+end
+redis.call('SET', KEYS[1], cjson.encode(data), 'EX', ttl)
 return cjson.encode(data)
 `;
 

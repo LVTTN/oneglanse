@@ -227,6 +227,14 @@ export async function handleJob(job: Job<ProviderJobData>): Promise<boolean> {
 					onAttemptComplete: () => {
 						activeAttemptCleanup = null;
 					},
+					onPromptProgress: async (current) => {
+						await updateProviderProgress({
+							jobGroupId,
+							provider,
+							status: "running",
+							resultCount: current,
+						});
+					},
 				},
 			);
 

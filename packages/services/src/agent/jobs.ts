@@ -77,7 +77,7 @@ export async function enqueueProviderJobs(args: {
 	userId: string;
 	workspaceId: string;
 	providers?: Provider[];
-}): Promise<void> {
+}): Promise<Provider[]> {
 	const {
 		jobGroupId,
 		prompts,
@@ -89,15 +89,48 @@ export async function enqueueProviderJobs(args: {
 	const providerJobs = buildProviderJobs().filter(({ provider }) =>
 		allowedProviders.includes(provider),
 	);
-	await Promise.all(
-		providerJobs.map(({ provider, runProviders }) =>
-			enqueueProviderJob({
+	const results = await Promise.allSettled(
+		providerJobs.map(async ({ provider, runProviders }) => {
+			await enqueueProviderJob({
 				jobGroupId,
 				provider,
 				runProviders,
 				prompts,
 				user_id: userId,
 				workspace_id: workspaceId,
+			});
+			return provider;
+		}),
+	);
+
+	return results.flatMap((result, index) => {
+		if (result.status === "fulfilled") {
+			return [];
+		}
+
+		const failedProvider = providerJobs[index]?.provider;
+		if (!failedProvider) {
+			return [];
+		}
+
+		console.error(
+			`[agent] failed to enqueue provider ${failedProvider}: ${toErrorMessage(result.reason)}`,
+		);
+		return [failedProvider];
+	});
+}
+
+async function markProvidersFailed(args: {
+	jobGroupId: string;
+	providers: Provider[];
+}): Promise<void> {
+	await Promise.all(
+		args.providers.map((provider) =>
+			updateProviderProgress({
+				jobGroupId: args.jobGroupId,
+				provider,
+				status: "failed",
+				resultCount: 0,
 			}),
 		),
 	);
@@ -163,17 +196,32 @@ export async function submitAgentJobGroup(args: {
 		AGENT_PROGRESS_TTL_SECONDS,
 	);
 
-	try {
-		await enqueueProviderJobs({
-			jobGroupId,
-			prompts,
-			userId,
-			workspaceId,
-			providers: authenticatedProviders,
+	void enqueueProviderJobs({
+		jobGroupId,
+		prompts,
+		userId,
+		workspaceId,
+		providers: authenticatedProviders,
+	})
+		.then(async (failedProviders) => {
+			if (failedProviders.length === 0) {
+				return;
+			}
+
+			await markProvidersFailed({
+				jobGroupId,
+				providers: failedProviders,
+			});
+		})
+		.catch(async (err) => {
+			console.error(
+				`[agent] failed to queue provider jobs for job group ${jobGroupId}: ${toErrorMessage(err)}`,
+			);
+			await markProvidersFailed({
+				jobGroupId,
+				providers: authenticatedProviders,
+			});
 		});
-	} catch (err) {
-		throw new Error(`failed to queue provider jobs: ${toErrorMessage(err)}`);
-	}
 
 	return { status: "queued", jobGroupId };
 }

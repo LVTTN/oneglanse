@@ -1,25 +1,25 @@
 "use client";
 
 import { cn, getModelFavicon, getProviderDisplayName } from "@oneglanse/utils";
-import { CheckCircle2, Loader2, StopCircle, XCircle } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { Button } from "./button.js";
+import { CheckCircle2, StopCircle, XCircle } from "lucide-react";
 
 export type ProviderRunDisplayPhase =
+	| "pending"
 	| "running"
 	| "completed"
 	| "failed"
 	| "stopped";
 
-const RUNNING_SUBTITLES = [
-	"Opening the provider and loading your session…",
-	"Submitting your prompts — this may take a moment.",
-	"Waiting for the AI to respond. Still going…",
-	"Extracting the response and cited sources.",
-	"Almost there. Saving results in the background.",
-	"Still running. Multi-prompt runs can take a while.",
-	"Your results will appear once this provider finishes.",
-];
+function Spinner({ className }: { className?: string }) {
+	return (
+		<div
+			className={cn(
+				"rounded-full border-[1.5px] border-gray-200 border-t-gray-500 dark:border-white/10 dark:border-t-white/50",
+				className,
+			)}
+		/>
+	);
+}
 
 export function ProviderRunStatusCard(props: {
 	provider: string;
@@ -37,120 +37,107 @@ export function ProviderRunStatusCard(props: {
 		promptNumber,
 		totalPrompts,
 	} = props;
-	const [subtitleIndex, setSubtitleIndex] = useState(0);
 	const title = getProviderDisplayName(provider);
-	const canStop = phase === "running" && Boolean(onStop);
+	const isActive = phase === "running" || phase === "pending";
+	const canStop = phase === "running" && Boolean(onStop) && !isStopping;
 
-	const subtitle = useMemo(() => {
+	function getSubtitle() {
+		if (phase === "pending") return "Queued — waiting to start";
 		if (phase === "running") {
 			if (
 				promptNumber !== undefined &&
 				totalPrompts !== undefined &&
-				totalPrompts > 1
+				totalPrompts > 0
 			) {
 				return `Prompt ${promptNumber} of ${totalPrompts}`;
 			}
-			return RUNNING_SUBTITLES[subtitleIndex % RUNNING_SUBTITLES.length];
+			return "Running prompts, please wait…";
 		}
-
-		if (phase === "completed") {
-			return "Responses saved successfully.";
-		}
-
-		if (phase === "stopped") {
-			return "Stopped at your request.";
-		}
-
+		if (phase === "completed") return "Responses saved.";
+		if (phase === "stopped") return "Stopped at your request.";
 		return "This provider needs another attempt.";
-	}, [phase, promptNumber, subtitleIndex, totalPrompts]);
+	}
 
-	useEffect(() => {
-		if (phase !== "running") return;
-		const timer = setInterval(() => {
-			setSubtitleIndex((current) => current + 1);
-		}, 2200);
-		return () => clearInterval(timer);
-	}, [phase]);
+	const logoGlow =
+		phase === "completed"
+			? "bg-emerald-400/25 dark:bg-emerald-500/20"
+			: phase === "failed"
+				? "bg-red-400/25 dark:bg-red-500/20"
+				: phase === "stopped"
+					? "bg-slate-400/20 dark:bg-slate-500/15"
+					: "bg-gray-300/30 dark:bg-white/10";
 
 	return (
-		<div className="pointer-events-auto w-[min(360px,calc(100vw-2rem))] rounded-[var(--app-radius)] border border-gray-200/80 bg-white px-4 py-4 shadow-[0_24px_70px_-30px_rgba(15,23,42,0.28)] animate-in fade-in-0 slide-in-from-bottom-2 zoom-in-95 duration-200 dark:border-gray-800 dark:bg-neutral-950 dark:shadow-[0_24px_70px_-30px_rgba(0,0,0,0.62)]">
-			<div className="flex items-center gap-3">
+		<div className="pointer-events-auto w-[min(296px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-gray-100/80 bg-white shadow-[0_4px_20px_-4px_rgba(0,0,0,0.10),0_1px_4px_-1px_rgba(0,0,0,0.05)] animate-in fade-in-0 slide-in-from-bottom-2 zoom-in-95 duration-200 dark:border-white/[0.06] dark:bg-neutral-900 dark:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.45)]">
+			<div className="flex items-center gap-2.5 px-3 py-2.5">
+				{/* Provider logo */}
 				<div className="relative shrink-0">
 					<div
 						className={cn(
-							"absolute inset-0 rounded-[var(--app-radius)] blur-md transition-opacity duration-300",
-							phase === "running"
-								? "bg-stone-200/70 opacity-80 dark:bg-white/10"
-								: phase === "completed"
-									? "bg-emerald-200/70 opacity-80 dark:bg-emerald-500/10"
-									: phase === "stopped"
-										? "bg-slate-200/70 opacity-80 dark:bg-slate-500/10"
-										: "bg-red-200/70 opacity-80 dark:bg-red-500/10",
+							"absolute -inset-1 rounded-xl blur-lg transition-all duration-500",
+							logoGlow,
 						)}
 					/>
 					<img
 						src={getModelFavicon(provider)}
 						alt={title}
-						className="relative h-9 w-9 rounded-[var(--app-radius)]"
+						className="relative h-7 w-7 rounded-xl object-contain"
 					/>
 				</div>
-				<div className="min-w-0 flex-1">
-					<p className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">
+
+				{/* Text — re-animates on provider / phase change */}
+				<div
+					key={`${provider}-${phase}-${promptNumber ?? ""}`}
+					className="min-w-0 flex-1 animate-in fade-in-0 duration-200"
+				>
+					<p className="truncate text-[13px] font-semibold leading-tight text-gray-900 dark:text-gray-100">
 						{title}
 					</p>
 					<p
 						className={cn(
-							"mt-0.5 text-sm",
-							phase === "running"
-								? "text-gray-500 dark:text-gray-400"
-								: phase === "completed"
-									? "text-emerald-600 dark:text-emerald-400"
-									: phase === "stopped"
-										? "text-slate-600 dark:text-slate-400"
-										: "text-red-600 dark:text-red-400",
+							"mt-0.5 text-[11px] leading-tight transition-colors duration-300",
+							phase === "pending"
+								? "text-gray-400 dark:text-gray-500"
+								: phase === "running"
+									? "text-gray-500 dark:text-gray-400"
+									: phase === "completed"
+										? "text-emerald-600 dark:text-emerald-400"
+										: phase === "stopped"
+											? "text-slate-500 dark:text-slate-400"
+											: "text-red-500 dark:text-red-400",
 						)}
 					>
-						{phase === "running"
-							? "Running now"
-							: phase === "completed"
-								? "Completed"
-								: phase === "stopped"
-									? "Stopped"
-									: "Run failed"}
-					</p>
-					<p className="mt-1 min-h-4 text-xs text-gray-400 transition-opacity duration-300 dark:text-gray-500">
-						{subtitle}
+						{getSubtitle()}
 					</p>
 				</div>
-				<div className="shrink-0">
-					{canStop ? (
-						<Button
-							type="button"
-							variant="outline"
-							onClick={() => void onStop?.()}
-							disabled={isStopping}
-							className="h-8 rounded-[var(--app-radius)] border-red-200 bg-red-50 px-2.5 text-red-600 hover:bg-red-100 hover:text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-950/50 dark:hover:text-red-300"
-						>
-							{isStopping ? (
-								<Loader2 className="h-3.5 w-3.5 animate-spin" />
-							) : (
-								<>
-									<StopCircle className="h-3.5 w-3.5" />
-									<span className="text-xs">Stop</span>
-								</>
+
+				{/* Right side */}
+				<div className="flex shrink-0 items-center gap-1.5">
+					{isActive && (
+						<Spinner
+							className={cn(
+								"h-3.5 w-3.5",
+								phase === "pending"
+									? "animate-[spin_2.4s_linear_infinite]"
+									: "animate-spin",
 							)}
-						</Button>
-					) : phase === "running" ? (
-						<div className="flex items-center gap-2">
-							<span className="h-2 w-2 rounded-[var(--app-radius)] bg-gray-400 animate-pulse dark:bg-gray-500" />
-							<Loader2 className="h-4 w-4 animate-[spin_1.6s_linear_infinite] text-gray-500 dark:text-gray-400" />
-						</div>
-					) : phase === "completed" ? (
-						<CheckCircle2 className="h-4 w-4 text-emerald-500" />
-					) : phase === "stopped" ? (
-						<div className="h-4 w-4 rounded-[var(--app-radius)] border border-slate-400 dark:border-slate-500" />
-					) : (
-						<XCircle className="h-4 w-4 text-red-500" />
+						/>
+					)}
+					{canStop && (
+						<button
+							type="button"
+							onClick={() => void onStop?.()}
+							className="flex h-6 w-6 items-center justify-center rounded-lg text-red-400 transition-all duration-150 hover:text-red-600 dark:text-red-500 dark:hover:text-red-400"
+							aria-label="Stop run"
+						>
+							<StopCircle className="h-3.5 w-3.5" />
+						</button>
+					)}
+					{phase === "completed" && (
+						<CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+					)}
+					{phase === "failed" && (
+						<XCircle className="h-3.5 w-3.5 text-red-500" />
 					)}
 				</div>
 			</div>

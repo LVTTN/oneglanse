@@ -20,6 +20,7 @@ export async function runPrompts(
 	payload: PromptPayload,
 	page: Page,
 	provider: Provider,
+	onPromptProgress?: (current: number, total: number) => Promise<void>,
 ): Promise<AskPromptResult[]> {
 	const { user_id: userId, workspace_id: workspaceId, prompts: promptsArray } = payload;
 
@@ -39,6 +40,8 @@ export async function runPrompts(
 
 		const preview = promptEntry.prompt.slice(0, 60) + (promptEntry.prompt.length > 60 ? "..." : "");
 		logger.log(`prompt ${i + 1}/${promptsArray.length} — "${preview}"`);
+
+		await onPromptProgress?.(i + 1, promptsArray.length).catch(() => {});
 
 		// IPRefreshNeededError propagates immediately for proxy rotation.
 		// Any other terminal failure skips this prompt and preserves accumulated results.

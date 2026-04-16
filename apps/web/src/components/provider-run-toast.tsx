@@ -1,10 +1,12 @@
 "use client";
 
+import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
 import { api } from "@/trpc/react";
 import { PROVIDER_LIST, type Provider } from "@oneglanse/types";
 import { ProviderRunStatusCard, toast } from "@oneglanse/ui";
 import { getProviderDisplayName } from "@oneglanse/utils";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type ProviderState = "pending" | "running" | "completed" | "failed" | "stopped";
 
@@ -15,11 +17,57 @@ type ProviderProgressResponse = {
 	stats?: { totalPrompts?: number };
 };
 
-type DisplayPhase = "running" | "completed" | "failed" | "stopped";
+type DisplayPhase = "pending" | "running" | "completed" | "failed" | "stopped";
 
 const PROVIDER_RUN_TOAST_ID = "provider-run-progress";
 const COMPLETION_TOAST_DURATION_MS = 1400;
 const STOPPED_HANDOFF_DELAY_MS = 350;
+const ACTIVE_PROVIDER_RUN_STORAGE_KEY = "oneglanse.active-provider-run";
+const ACTIVE_PROVIDER_RUN_EVENT = "oneglanse:active-provider-run";
+
+type ActiveProviderRun = {
+	workspaceId: string;
+	jobId: string;
+};
+
+function readActiveProviderRun(): ActiveProviderRun | null {
+	if (typeof window === "undefined") return null;
+	const raw = window.sessionStorage.getItem(ACTIVE_PROVIDER_RUN_STORAGE_KEY);
+	if (!raw) return null;
+
+	try {
+		const parsed = JSON.parse(raw) as Partial<ActiveProviderRun>;
+		if (
+			typeof parsed.workspaceId !== "string" ||
+			typeof parsed.jobId !== "string" ||
+			parsed.workspaceId.length === 0 ||
+			parsed.jobId.length === 0
+		) {
+			return null;
+		}
+		return {
+			workspaceId: parsed.workspaceId,
+			jobId: parsed.jobId,
+		};
+	} catch {
+		return null;
+	}
+}
+
+export function persistActiveProviderRun(args: ActiveProviderRun): void {
+	if (typeof window === "undefined") return;
+	window.sessionStorage.setItem(
+		ACTIVE_PROVIDER_RUN_STORAGE_KEY,
+		JSON.stringify(args),
+	);
+	window.dispatchEvent(new Event(ACTIVE_PROVIDER_RUN_EVENT));
+}
+
+export function clearActiveProviderRun(): void {
+	if (typeof window === "undefined") return;
+	window.sessionStorage.removeItem(ACTIVE_PROVIDER_RUN_STORAGE_KEY);
+	window.dispatchEvent(new Event(ACTIVE_PROVIDER_RUN_EVENT));
+}
 
 export function showDisconnectedProvidersToast(args: {
 	disconnectedProviders?: string[];
@@ -41,40 +89,23 @@ export function showDisconnectedProvidersToast(args: {
 function ProviderRunToastCard({
 	provider,
 	phase,
-	workspaceId,
-	jobId,
 	promptNumber,
 	totalPrompts,
+	onStop,
+	isStopping,
 }: {
 	provider: Provider;
 	phase: DisplayPhase;
-	workspaceId: string;
-	jobId: string;
 	promptNumber?: number;
 	totalPrompts?: number;
+	onStop?: () => void | Promise<void>;
+	isStopping?: boolean;
 }) {
-	const [isStopping, setIsStopping] = useState(false);
-	const stopProviderMutation = api.agent.stopProvider.useMutation();
-
-	const handleStop = async () => {
-		if (isStopping) return;
-		setIsStopping(true);
-		try {
-			await stopProviderMutation.mutateAsync({
-				workspaceId,
-				jobId,
-				provider,
-			});
-		} finally {
-			setIsStopping(false);
-		}
-	};
-
 	return (
 		<ProviderRunStatusCard
 			provider={provider}
 			phase={phase}
-			onStop={phase === "running" ? handleStop : undefined}
+			onStop={phase === "running" ? onStop : undefined}
 			isStopping={isStopping}
 			promptNumber={promptNumber}
 			totalPrompts={totalPrompts}
@@ -89,23 +120,24 @@ function showProviderToast(args: {
 	jobId: string;
 	promptNumber?: number;
 	totalPrompts?: number;
+	onStop?: () => void | Promise<void>;
+	isStopping?: boolean;
 }) {
-	toast.dismiss(PROVIDER_RUN_TOAST_ID);
 	toast.custom(
 		() => (
 			<ProviderRunToastCard
 				provider={args.provider}
 				phase={args.phase}
-				workspaceId={args.workspaceId}
-				jobId={args.jobId}
 				promptNumber={args.promptNumber}
 				totalPrompts={args.totalPrompts}
+				onStop={args.onStop}
+				isStopping={args.isStopping}
 			/>
 		),
 		{
 			id: PROVIDER_RUN_TOAST_ID,
 			duration:
-				args.phase === "running"
+				args.phase === "pending" || args.phase === "running"
 					? Number.POSITIVE_INFINITY
 					: args.phase === "stopped"
 						? STOPPED_HANDOFF_DELAY_MS
@@ -121,6 +153,7 @@ export function useProviderRunToast(args: {
 	response: unknown;
 }) {
 	const { active, workspaceId, jobId, response } = args;
+	const stopProviderMutation = api.agent.stopProvider.useMutation();
 	const completionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const latestParsedRef = useRef<{
 		updateId: number;
@@ -134,6 +167,9 @@ export function useProviderRunToast(args: {
 		totalPrompts: undefined,
 	});
 	const previousProviderStatesRef = useRef<Record<string, ProviderState>>({});
+	const [stoppingProvider, setStoppingProvider] = useState<Provider | null>(
+		null,
+	);
 	const displayRef = useRef<{
 		provider: Provider;
 		phase: DisplayPhase;
@@ -153,6 +189,27 @@ export function useProviderRunToast(args: {
 	useEffect(() => {
 		latestParsedRef.current = parsed;
 	}, [parsed]);
+
+	const buildStopHandler = useCallback(
+		(provider: Provider) => {
+			return async () => {
+				if (!jobId || stoppingProvider === provider) return;
+				setStoppingProvider(provider);
+				try {
+					await stopProviderMutation.mutateAsync({
+						workspaceId,
+						jobId,
+						provider,
+					});
+				} finally {
+					setStoppingProvider((current) =>
+						current === provider ? null : current,
+					);
+				}
+			};
+		},
+		[jobId, stopProviderMutation, stoppingProvider, workspaceId],
+	);
 
 	useEffect(() => {
 		return () => {
@@ -175,8 +232,16 @@ export function useProviderRunToast(args: {
 			return;
 		}
 
+		if (!response) {
+			displayRef.current = null;
+			return;
+		}
+
 		const providerStates = parsed.providers;
 		const previousStates = previousProviderStatesRef.current;
+		const pendingProviders = PROVIDER_LIST.filter(
+			(provider) => providerStates[provider] === "pending",
+		);
 		const runningProviders = PROVIDER_LIST.filter(
 			(provider) => providerStates[provider] === "running",
 		);
@@ -210,6 +275,8 @@ export function useProviderRunToast(args: {
 					phase: nextPhase,
 					workspaceId,
 					jobId,
+					onStop: buildStopHandler(transitionedProvider),
+					isStopping: stoppingProvider === transitionedProvider,
 				});
 			}
 
@@ -227,9 +294,14 @@ export function useProviderRunToast(args: {
 					(provider) => latest.providers[provider] === "running",
 				);
 				if (nextRunningProvider) {
+					const nextPromptNumber =
+						(latest.results[nextRunningProvider] ?? 0) > 0
+							? latest.results[nextRunningProvider]
+							: undefined;
 					displayRef.current = {
 						provider: nextRunningProvider,
 						phase: "running",
+						promptNumber: nextPromptNumber,
 					};
 					if (jobId) {
 						showProviderToast({
@@ -237,6 +309,10 @@ export function useProviderRunToast(args: {
 							phase: "running",
 							workspaceId,
 							jobId,
+							promptNumber: nextPromptNumber,
+							totalPrompts: latest.totalPrompts,
+							onStop: buildStopHandler(nextRunningProvider),
+							isStopping: stoppingProvider === nextRunningProvider,
 						});
 					}
 					return;
@@ -257,7 +333,43 @@ export function useProviderRunToast(args: {
 		}
 
 		const nextRunningProvider = runningProviders[0];
+		const nextPromptNumber =
+			nextRunningProvider && (parsed.results[nextRunningProvider] ?? 0) > 0
+				? parsed.results[nextRunningProvider]
+				: undefined;
+
 		if (!nextRunningProvider) {
+			const nextPendingProvider = pendingProviders[0];
+			if (nextPendingProvider) {
+				if (
+					currentDisplay?.provider === nextPendingProvider &&
+					currentDisplay.phase === "pending"
+				) {
+					return;
+				}
+
+				if (completionTimerRef.current) {
+					clearTimeout(completionTimerRef.current);
+					completionTimerRef.current = null;
+				}
+
+				displayRef.current = {
+					provider: nextPendingProvider,
+					phase: "pending",
+				};
+				if (jobId) {
+					showProviderToast({
+						provider: nextPendingProvider,
+						phase: "pending",
+						workspaceId,
+						jobId,
+						onStop: buildStopHandler(nextPendingProvider),
+						isStopping: stoppingProvider === nextPendingProvider,
+					});
+				}
+				return;
+			}
+
 			if (
 				parsed.updateId > 0 &&
 				parsed.providers &&
@@ -271,7 +383,8 @@ export function useProviderRunToast(args: {
 
 		if (
 			currentDisplay?.provider === nextRunningProvider &&
-			currentDisplay.phase === "running"
+			currentDisplay.phase === "running" &&
+			currentDisplay.promptNumber === nextPromptNumber
 		) {
 			return;
 		}
@@ -281,14 +394,117 @@ export function useProviderRunToast(args: {
 			completionTimerRef.current = null;
 		}
 
-		displayRef.current = { provider: nextRunningProvider, phase: "running" };
+		displayRef.current = {
+			provider: nextRunningProvider,
+			phase: "running",
+			promptNumber: nextPromptNumber,
+		};
 		if (jobId) {
 			showProviderToast({
 				provider: nextRunningProvider,
 				phase: "running",
 				workspaceId,
 				jobId,
+				promptNumber: nextPromptNumber,
+				totalPrompts: parsed.totalPrompts,
+				onStop: buildStopHandler(nextRunningProvider),
+				isStopping: stoppingProvider === nextRunningProvider,
 			});
 		}
-	}, [active, jobId, parsed, workspaceId]);
+	}, [
+		active,
+		jobId,
+		parsed,
+		response,
+		stoppingProvider,
+		workspaceId,
+	]);
+}
+
+export function ProviderRunToastManager() {
+	const router = useRouter();
+	const pathname = usePathname();
+	const searchParams = useSafeSearchParams();
+	const urlWorkspaceId = searchParams.get("workspace") ?? "";
+	const urlJobId = searchParams.get("jobId") ?? "";
+	const [persistedRun, setPersistedRun] = useState<ActiveProviderRun | null>(
+		null,
+	);
+	const [dismissedJobId, setDismissedJobId] = useState<string | null>(null);
+
+	useEffect(() => {
+		const syncPersistedRun = () => {
+			setPersistedRun(readActiveProviderRun());
+		};
+
+		syncPersistedRun();
+		window.addEventListener(ACTIVE_PROVIDER_RUN_EVENT, syncPersistedRun);
+		window.addEventListener("storage", syncPersistedRun);
+
+		return () => {
+			window.removeEventListener(ACTIVE_PROVIDER_RUN_EVENT, syncPersistedRun);
+			window.removeEventListener("storage", syncPersistedRun);
+		};
+	}, []);
+
+	useEffect(() => {
+		if (!urlWorkspaceId || !urlJobId) return;
+		if (dismissedJobId === urlJobId) return;
+		const nextRun = { workspaceId: urlWorkspaceId, jobId: urlJobId };
+		persistActiveProviderRun(nextRun);
+		setPersistedRun(nextRun);
+	}, [dismissedJobId, urlJobId, urlWorkspaceId]);
+
+	const activeRun =
+		urlWorkspaceId && urlJobId && dismissedJobId !== urlJobId
+			? { workspaceId: urlWorkspaceId, jobId: urlJobId }
+			: persistedRun;
+
+	const jobStatusQuery = api.agent.status.useQuery(
+		{
+			workspaceId: activeRun?.workspaceId ?? "",
+			jobId: activeRun?.jobId ?? "",
+		},
+		{
+			enabled: !!activeRun,
+			refetchInterval: 2000,
+			refetchIntervalInBackground: true,
+			refetchOnMount: "always",
+			staleTime: 0,
+		},
+	);
+
+	useProviderRunToast({
+		active: !!activeRun,
+		workspaceId: activeRun?.workspaceId ?? "",
+		jobId: activeRun?.jobId ?? null,
+		response: jobStatusQuery.data?.response,
+	});
+
+	useEffect(() => {
+		if (jobStatusQuery.data?.status !== "completed") return;
+		clearActiveProviderRun();
+		setPersistedRun(null);
+		if (activeRun?.jobId) {
+			setDismissedJobId(activeRun.jobId);
+		}
+
+		if (urlJobId && pathname) {
+			const params = new URLSearchParams(searchParams.toString());
+			params.delete("jobId");
+			const query = params.toString();
+			router.replace(query ? `${pathname}?${query}` : pathname, {
+				scroll: false,
+			});
+		}
+	}, [
+		activeRun?.jobId,
+		jobStatusQuery.data?.status,
+		pathname,
+		router,
+		searchParams,
+		urlJobId,
+	]);
+
+	return null;
 }

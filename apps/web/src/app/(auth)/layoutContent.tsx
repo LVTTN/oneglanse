@@ -4,6 +4,7 @@
 import { AppSidebar } from "@/components/app-sidebar";
 import { formToolbarButtonClassName } from "@/components/forms/auth-form-chrome";
 import { ProviderConnectionsPanel } from "@/components/provider-connections-panel";
+import { ProviderRunToastManager } from "@/components/provider-run-toast";
 import { signOutAndRedirect } from "@/lib/auth/logout";
 import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
 import { useProviderConnections } from "@/lib/provider-connections/client";
@@ -186,6 +187,7 @@ export default function LayoutContent({
 	const workspaceHref = providersWorkspaceId
 		? `/workspace?workspace=${providersWorkspaceId}`
 		: "/workspace";
+	const runToastManager = <ProviderRunToastManager />;
 
 	useEffect(() => {
 		if (!canAccessPeopleInMode(appMode) && isPeoplePage) {
@@ -230,83 +232,98 @@ export default function LayoutContent({
 
 	if (shouldShowConnectionGate) {
 		return (
-			<main className="mx-auto flex min-h-svh w-full max-w-6xl flex-col px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
-				<div className="fixed right-4 top-4 z-50">
-					<UserMenu userName={userName} userEmail={userEmail} />
-				</div>
-				<div className="mb-10 max-w-3xl">
-					<h1 className="text-[1.6rem] font-semibold tracking-[-0.03em] text-gray-900 sm:text-[2rem] lg:text-[2.2rem] dark:text-gray-100">
-						{canLaunchProvidersLocally
-							? "Connect a provider"
-							: "Providers are required"}
-					</h1>
-					<p className="mt-3 text-base leading-7 text-gray-500 dark:text-gray-400">
-						{canLaunchProvidersLocally
-							? "Log in to any provider below, then close the browser window. Your auth is saved automatically, and you can continue as soon as one provider is active."
-							: "Provider auth can only be captured on a local run. Open the local app, connect at least one provider at /providers, then sync the saved auth back here before continuing."}
-					</p>
-				</div>
+			<>
+				{runToastManager}
+				<main className="mx-auto flex min-h-svh w-full max-w-6xl flex-col px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
+					<div className="fixed right-4 top-4 z-50">
+						<UserMenu userName={userName} userEmail={userEmail} />
+					</div>
+					<div className="mb-10 max-w-3xl">
+						<h1 className="text-[1.6rem] font-semibold tracking-[-0.03em] text-gray-900 sm:text-[2rem] lg:text-[2.2rem] dark:text-gray-100">
+							{canLaunchProvidersLocally
+								? "Connect a provider"
+								: "Providers are required"}
+						</h1>
+						<p className="mt-3 text-base leading-7 text-gray-500 dark:text-gray-400">
+							{canLaunchProvidersLocally
+								? "Log in to any provider below, then close the browser window. Your auth is saved automatically, and you can continue as soon as one provider is active."
+								: "Provider auth can only be captured on a local run. Open the local app, connect at least one provider at /providers, then sync the saved auth back here before continuing."}
+						</p>
+					</div>
 
-				<ProviderConnectionsPanel title={null} description={null} />
-			</main>
+					<ProviderConnectionsPanel title={null} description={null} />
+				</main>
+			</>
 		);
 	}
 
 	if (!resolvedWorkspace) {
 		if (isResolvingWorkspaceFromUrl) {
 			return (
-				<div className="web-app-shell">
-					<main className="web-app-main bg-stone-50 dark:bg-neutral-950" />
-				</div>
+				<>
+					{runToastManager}
+					<div className="web-app-shell">
+						<main className="web-app-main bg-stone-50 dark:bg-neutral-950" />
+					</div>
+				</>
 			);
 		}
 
 		return (
-			<div className="web-app-shell">
-				<main className="web-app-main bg-stone-50 dark:bg-neutral-950">
-					<div className="fixed right-4 top-4 z-50">
-						<UserMenu userName={userName} userEmail={userEmail} />
-					</div>
-					<div className="web-app-scroll">{children}</div>
-				</main>
-			</div>
+			<>
+				{runToastManager}
+				<div className="web-app-shell">
+					<main className="web-app-main bg-stone-50 dark:bg-neutral-950">
+						<div className="fixed right-4 top-4 z-50">
+							<UserMenu userName={userName} userEmail={userEmail} />
+						</div>
+						<div className="web-app-scroll">{children}</div>
+					</main>
+				</div>
+			</>
 		);
 	}
 
 	if (isOnboardingFlow) {
 		return (
-			<div className="web-app-shell">
-				<main className="web-app-main">
-					<div className="fixed right-4 top-4 z-50">
-						<UserMenu userName={userName} userEmail={userEmail} />
-					</div>
-					<div className="web-app-scroll">{children}</div>
-				</main>
-			</div>
+			<>
+				{runToastManager}
+				<div className="web-app-shell">
+					<main className="web-app-main">
+						<div className="fixed right-4 top-4 z-50">
+							<UserMenu userName={userName} userEmail={userEmail} />
+						</div>
+						<div className="web-app-scroll">{children}</div>
+					</main>
+				</div>
+			</>
 		);
 	}
 
 	return (
-		<WorkspaceProvider workspace={resolvedWorkspace} userEmail={userEmail}>
-			<div className="web-app-shell">
-				<AppSidebar
-					appMode={appMode}
-					workspace={resolvedWorkspace}
-					userName={userName}
-					userEmail={userEmail}
-				/>
-				<main className="web-app-main">
-					{pageHeader ? (
-						<header className="web-app-header">
-							<SidebarTrigger className="size-8 shrink-0 rounded-none border-transparent bg-transparent p-0 shadow-none hover:bg-transparent dark:hover:bg-transparent" />
-							<h1 className="truncate text-[0.95rem] font-medium tracking-[-0.01em] text-gray-950 dark:text-gray-50">
-								{pageHeader}
-							</h1>
-						</header>
-					) : null}
-					<div className="web-app-scroll">{children}</div>
-				</main>
-			</div>
-		</WorkspaceProvider>
+		<>
+			{runToastManager}
+			<WorkspaceProvider workspace={resolvedWorkspace} userEmail={userEmail}>
+				<div className="web-app-shell">
+					<AppSidebar
+						appMode={appMode}
+						workspace={resolvedWorkspace}
+						userName={userName}
+						userEmail={userEmail}
+					/>
+					<main className="web-app-main">
+						{pageHeader ? (
+							<header className="web-app-header">
+								<SidebarTrigger className="size-8 shrink-0 rounded-none border-transparent bg-transparent p-0 shadow-none hover:bg-transparent dark:hover:bg-transparent" />
+								<h1 className="truncate text-[0.95rem] font-medium tracking-[-0.01em] text-gray-950 dark:text-gray-50">
+									{pageHeader}
+								</h1>
+							</header>
+						) : null}
+						<div className="web-app-scroll">{children}</div>
+					</main>
+				</div>
+			</WorkspaceProvider>
+		</>
 	);
 }

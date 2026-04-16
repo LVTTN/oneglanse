@@ -21,6 +21,7 @@ export async function agentHandler(
 		signal?: AbortSignal;
 		onAttemptStart?: (attempt: BrowserAttempt) => void | Promise<void>;
 		onAttemptComplete?: () => void | Promise<void>;
+		onPromptProgress?: (current: number, total: number) => Promise<void>;
 	},
 ): Promise<AskPromptResult[]> {
 	return runWithProvider(provider, async () => {
@@ -29,6 +30,7 @@ export async function agentHandler(
 			signal: options?.signal,
 			onAttemptStart: options?.onAttemptStart,
 			onAttemptComplete: options?.onAttemptComplete,
+			onPromptProgress: options?.onPromptProgress,
 		});
 	});
 }

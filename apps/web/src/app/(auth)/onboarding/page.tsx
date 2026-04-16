@@ -6,7 +6,11 @@ import {
 	formSecondaryButtonClassName,
 	formSurfaceClassName,
 } from "@/components/forms/auth-form-chrome";
-import { showDisconnectedProvidersToast } from "@/components/provider-run-toast";
+import {
+	clearActiveProviderRun,
+	persistActiveProviderRun,
+	showDisconnectedProvidersToast,
+} from "@/components/provider-run-toast";
 import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
 import { useProviderConnections } from "@/lib/provider-connections/client";
 import { api } from "@/trpc/react";
@@ -45,6 +49,7 @@ export default function FirstWorkspaceOnboardingPage() {
 	const [prompts, setPrompts] = useState<string[]>([]);
 	const [inputValue, setInputValue] = useState("");
 	const [faviconError, setFaviconError] = useState(false);
+	const [isStartingRun, setIsStartingRun] = useState(false);
 	const [isSuggestedPromptsExpanded, setIsSuggestedPromptsExpanded] =
 		useState(true);
 	const [suggestedPromptsHeight, setSuggestedPromptsHeight] = useState(0);
@@ -105,10 +110,13 @@ export default function FirstWorkspaceOnboardingPage() {
 			return;
 		}
 
+		setIsStartingRun(true);
 		try {
 			await storePrompts.mutateAsync({ workspaceId, prompts });
 			const run = await runAgent.mutateAsync({ workspaceId });
 			if (run.status === "no-providers") {
+				setIsStartingRun(false);
+				clearActiveProviderRun();
 				showDisconnectedProvidersToast({
 					disconnectedProviders:
 						run.disconnectedProviders.length > 0
@@ -121,11 +129,16 @@ export default function FirstWorkspaceOnboardingPage() {
 			}
 			const jobId = run?.jobId;
 			if (!jobId) {
+				setIsStartingRun(false);
+				clearActiveProviderRun();
 				toast.error("Prompts were saved, but the run could not be started.");
 				return;
 			}
+			persistActiveProviderRun({ workspaceId, jobId });
 			router.replace(`/dashboard?workspace=${workspaceId}&jobId=${jobId}`);
 		} catch {
+			setIsStartingRun(false);
+			clearActiveProviderRun();
 			toast.error("Failed to start. Please try again.");
 		}
 	};
@@ -138,7 +151,8 @@ export default function FirstWorkspaceOnboardingPage() {
 		);
 	}
 
-	const isPending = storePrompts.isPending || runAgent.isPending;
+	const isPending =
+		isStartingRun || storePrompts.isPending || runAgent.isPending;
 
 	useEffect(() => {
 		setIsSuggestedPromptsExpanded(prompts.length === 0);

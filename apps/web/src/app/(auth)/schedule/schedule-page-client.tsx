@@ -6,8 +6,9 @@ import {
 	formSecondaryButtonClassName,
 } from "@/components/forms/auth-form-chrome";
 import {
+	clearActiveProviderRun,
+	persistActiveProviderRun,
 	showDisconnectedProvidersToast,
-	useProviderRunToast,
 } from "@/components/provider-run-toast";
 import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
 import { useProviderConnections } from "@/lib/provider-connections/client";
@@ -374,16 +375,10 @@ export default function SchedulePageClient({
 		},
 	);
 
-	useProviderRunToast({
-		active: Boolean(runJobId) && isRunning,
-		workspaceId,
-		jobId: runJobId,
-		response: jobStatusQuery.data?.response,
-	});
-
 	useEffect(() => {
 		if (!isRunning || !runJobId) return;
 		if (jobStatusQuery.data?.status === "completed") {
+			clearActiveProviderRun();
 			setIsRunning(false);
 			setRunJobId(null);
 		}
@@ -447,15 +442,18 @@ export default function SchedulePageClient({
 		try {
 			const result = await runNowMutation.mutateAsync({ workspaceId });
 			if (result.status === "queued" && result.jobId) {
+				persistActiveProviderRun({ workspaceId, jobId: result.jobId });
 				setRunJobId(result.jobId);
 				return;
 			}
 			if (result.status === "empty") {
+				clearActiveProviderRun();
 				setIsRunning(false);
 				toast.warning("No prompts configured for this workspace.");
 				return;
 			}
 			if (result.status === "no-providers") {
+				clearActiveProviderRun();
 				setIsRunning(false);
 				showDisconnectedProvidersToast({
 					disconnectedProviders:
@@ -467,10 +465,12 @@ export default function SchedulePageClient({
 				});
 				return;
 			}
+			clearActiveProviderRun();
 			setIsRunning(false);
 			toast.error("Failed to start run.");
 		} catch (err) {
 			console.error(err);
+			clearActiveProviderRun();
 			setIsRunning(false);
 			toast.error("Failed to start run.");
 		}

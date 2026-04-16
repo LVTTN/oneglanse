@@ -1,7 +1,6 @@
 "use client";
 
 import { ExportMenu } from "@/components/export-menu";
-import { useProviderRunToast } from "@/components/provider-run-toast";
 import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
 import { api } from "@/trpc/react";
 import {
@@ -49,19 +48,6 @@ export default function Dashboard() {
 	const { isLoading: isPromptSourcesLoading, error: promptSourcesError } =
 		usePromptSources(workspaceId);
 	const isLoading = isAnalysedPromptsLoading || isPromptSourcesLoading;
-
-	// Job run toast — shows provider progress when redirected from onboarding or schedule page
-	const jobId = searchParams.get("jobId") ?? null;
-	const jobStatusQuery = api.agent.status.useQuery(
-		{ workspaceId, jobId: jobId ?? "" },
-		{ enabled: !!jobId && !!workspaceId, refetchInterval: 2000 },
-	);
-	useProviderRunToast({
-		active: !!jobId && !!workspaceId,
-		workspaceId,
-		jobId,
-		response: jobStatusQuery.data?.response,
-	});
 
 	// Filters — persisted in URL so they survive navigation and are bookmarkable
 	const modelFilter = searchParams.get("model") ?? "All Models";
