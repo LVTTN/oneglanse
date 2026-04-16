@@ -3,7 +3,10 @@ import { toErrorMessage } from "@oneglanse/errors";
 import type { Provider, UserPrompt } from "@oneglanse/types";
 import { PROVIDER_LIST } from "@oneglanse/types";
 import { fetchUserPromptsForWorkspace } from "../prompt/index.js";
-import { readAuthenticatedRuntimeProviders } from "./auth.js";
+import {
+	getMissingRuntimeProviders,
+	readAuthenticatedRuntimeProviders,
+} from "./auth.js";
 import { updateProviderProgress } from "./progress.js";
 import { getProviderQueue } from "./queue.js";
 import { redis, waitForRedis } from "./redis.js";
@@ -23,7 +26,8 @@ type ProviderJobPayload = {
 
 export type SubmitAgentJobResult =
 	| { status: "queued"; jobGroupId: string }
-	| { status: "empty" };
+	| { status: "empty" }
+	| { status: "no-providers"; disconnectedProviders: Provider[] };
 
 export function buildProviderJobId(
 	jobGroupId: string,
@@ -128,10 +132,11 @@ export async function submitAgentJobGroup(args: {
 	const jobGroupId = randomUUID();
 	const authenticatedProviders = await readAuthenticatedRuntimeProviders();
 	if (authenticatedProviders.length === 0) {
+		const disconnectedProviders = await getMissingRuntimeProviders();
 		console.warn(
 			`[agent] submitAgentJobGroup: no authenticated providers found for workspace ${workspaceId} — skipping`,
 		);
-		return { status: "empty" };
+		return { status: "no-providers", disconnectedProviders };
 	}
 	await waitForRedis();
 

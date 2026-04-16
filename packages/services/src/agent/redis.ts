@@ -9,7 +9,7 @@ export const redis = new Redis({
 	connectTimeout: 10_000,
 	commandTimeout: 10_000,
 	maxRetriesPerRequest: 2,
-	enableOfflineQueue: false,
+	enableOfflineQueue: true,
 	// Detect dead connections quickly after sleep/network change
 	keepAlive: 10_000,
 	// Re-queue commands that were in-flight when the connection dropped

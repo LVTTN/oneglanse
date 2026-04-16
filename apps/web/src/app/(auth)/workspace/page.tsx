@@ -110,7 +110,7 @@ export default function WorkspaceGateway() {
 							</div>
 
 							{selection && (
-								<div className="space-y-2.5 rounded-[24px] border border-dashed border-gray-200/80 bg-stone-50/80 p-3.5 dark:border-gray-800 dark:bg-gray-900/60 xl:space-y-3 xl:p-4">
+								<div className="space-y-2.5 rounded-[var(--app-radius)] border border-dashed border-gray-200/80 bg-stone-50/80 p-3.5 dark:border-gray-800 dark:bg-gray-900/60 xl:space-y-3 xl:p-4">
 									<p className="text-sm text-gray-600 dark:text-gray-300 xl:text-[14px]">
 										Select a workspace in{" "}
 										<strong>{selection.organization.name}</strong>
@@ -124,7 +124,7 @@ export default function WorkspaceGateway() {
 												onClick={() => handleSelectWorkspace(ws.slug)}
 												className={cn(
 													formSecondaryButtonClassName,
-													"h-9 rounded-xl px-3 xl:h-10 xl:px-4",
+													"h-9 rounded-[var(--app-radius)] px-3 xl:h-10 xl:px-4",
 												)}
 											>
 												{ws.name}

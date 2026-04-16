@@ -27,16 +27,16 @@ export function DashboardSkeleton() {
 			<div className="web-page-wide-inner py-4">
 				<div className="space-y-6">
 					<div className="flex items-center gap-3">
-						<Skeleton className="h-9 w-44 rounded-lg" />
-						<Skeleton className="h-9 w-44 rounded-lg" />
-						<Skeleton className="h-9 w-40 rounded-lg" />
+						<Skeleton className="h-9 w-44 rounded-[var(--app-radius)]" />
+						<Skeleton className="h-9 w-44 rounded-[var(--app-radius)]" />
+						<Skeleton className="h-9 w-40 rounded-[var(--app-radius)]" />
 					</div>
 
 					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
 						{DASHBOARD_SKELETON_KEYS.map((key) => (
 							<div
 								key={key}
-								className="rounded-[24px] border border-gray-100/80 bg-white p-4 dark:border-gray-800 dark:bg-neutral-950"
+								className="rounded-[var(--app-radius)] border border-gray-100/80 bg-white p-4 dark:border-gray-800 dark:bg-neutral-950"
 							>
 								<Skeleton className="h-3 w-20 rounded" />
 								<Skeleton className="mt-4 h-8 w-24 rounded" />
@@ -46,12 +46,12 @@ export function DashboardSkeleton() {
 					</div>
 
 					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-						<Skeleton className="h-[280px] rounded-2xl sm:h-[380px] lg:h-[500px]" />
-						<Skeleton className="h-[280px] rounded-2xl sm:h-[380px] lg:h-[500px]" />
-						<Skeleton className="h-[280px] rounded-2xl sm:h-[380px] lg:h-[500px]" />
+						<Skeleton className="h-[280px] rounded-[var(--app-radius)] sm:h-[380px] lg:h-[500px]" />
+						<Skeleton className="h-[280px] rounded-[var(--app-radius)] sm:h-[380px] lg:h-[500px]" />
+						<Skeleton className="h-[280px] rounded-[var(--app-radius)] sm:h-[380px] lg:h-[500px]" />
 					</div>
 
-					<Skeleton className="h-[200px] rounded-2xl sm:h-[280px] lg:h-[360px]" />
+					<Skeleton className="h-[200px] rounded-[var(--app-radius)] sm:h-[280px] lg:h-[360px]" />
 				</div>
 			</div>
 		</div>

@@ -367,7 +367,7 @@ export default function PeoplePage() {
 								responses.
 							</p>
 							{isEditingWorkspace && (
-								<div className="rounded-[20px] border border-amber-200 bg-amber-50 px-3 py-3 dark:border-amber-900/60 dark:bg-amber-950/20">
+								<div className="rounded-[var(--app-radius)] border border-amber-200 bg-amber-50 px-3 py-3 dark:border-amber-900/60 dark:bg-amber-950/20">
 									<p className="text-xs text-amber-800 dark:text-amber-300">
 										Warning: Changing brand details clears all analyzed data in
 										this workspace. Raw prompt responses are not deleted.
@@ -644,7 +644,7 @@ export default function PeoplePage() {
 									<Skeleton className="h-4 w-32" />
 									<Skeleton className="h-3 w-40" />
 								</div>
-								<Skeleton className="h-6 w-16 rounded-full" />
+								<Skeleton className="h-6 w-16 rounded-[var(--app-radius)]" />
 							</div>
 						))}
 					</div>
@@ -693,7 +693,7 @@ export default function PeoplePage() {
 										</TableCell>
 										<TableCell className="px-4 py-3">
 											<span
-												className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getRoleBadgeClass(member.role)}`}
+												className={`inline-flex items-center rounded-[var(--app-radius)] px-2 py-0.5 text-xs font-medium ${getRoleBadgeClass(member.role)}`}
 											>
 												{member.role}
 											</span>

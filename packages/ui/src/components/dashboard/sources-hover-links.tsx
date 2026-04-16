@@ -99,7 +99,7 @@ export function SourcesHoverLinks({
 							}
 						}}
 						title={item.title}
-						className={`inline-flex min-h-11 w-fit max-w-[18rem] flex-col gap-2 rounded-[22px] border px-3.5 py-3 text-[11px] shadow-[0_16px_40px_-26px_rgba(15,23,42,0.14)] transition-[background-color,box-shadow,color,transform,border-color,opacity,max-height] duration-200 ease-out ${
+						className={`inline-flex min-h-11 w-fit max-w-[18rem] flex-col gap-2 rounded-[var(--app-radius)] border px-3.5 py-3 text-[11px] shadow-[0_16px_40px_-26px_rgba(15,23,42,0.14)] transition-[background-color,box-shadow,color,transform,border-color,opacity,max-height] duration-200 ease-out ${
 							isActive
 								? "border-slate-300/80 bg-white text-slate-900 -translate-y-0.5 shadow-[0_18px_44px_-22px_rgba(15,23,42,0.18)] dark:border-white/15 dark:bg-neutral-950 dark:text-slate-100"
 								: activeCardId
@@ -112,7 +112,7 @@ export function SourcesHoverLinks({
 								<img
 									src={faviconUrls[0]}
 									alt=""
-									className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 rounded-sm opacity-80"
+									className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 rounded-[var(--app-radius)] opacity-80"
 								/>
 							) : null}
 
@@ -124,7 +124,7 @@ export function SourcesHoverLinks({
 										</span>
 									) : null}
 									{showDuplicateBadge ? (
-										<span className="inline-flex flex-shrink-0 rounded-full bg-white/90 px-1.5 py-0.5 text-[9px] font-medium tracking-[0.04em] text-gray-500 shadow-[0_4px_10px_-8px_rgba(15,23,42,0.5)] dark:bg-neutral-950/90 dark:text-gray-400">
+										<span className="inline-flex flex-shrink-0 rounded-[var(--app-radius)] bg-white/90 px-1.5 py-0.5 text-[9px] font-medium tracking-[0.04em] text-gray-500 shadow-[0_4px_10px_-8px_rgba(15,23,42,0.5)] dark:bg-neutral-950/90 dark:text-gray-400">
 											{duplicateCount} citations
 										</span>
 									) : null}
@@ -143,7 +143,7 @@ export function SourcesHoverLinks({
 
 						{citedText ? (
 							<div
-								className={`overflow-hidden rounded-[16px] border px-3 py-0 text-[10px] leading-relaxed transition-[max-height,opacity,padding,margin,border-color,background-color,color] duration-200 ease-out ${
+								className={`overflow-hidden rounded-[var(--app-radius)] border px-3 py-0 text-[10px] leading-relaxed transition-[max-height,opacity,padding,margin,border-color,background-color,color] duration-200 ease-out ${
 									isActive
 										? "mt-0.5 max-h-44 border-slate-200/80 bg-slate-50/90 py-3 text-slate-500 opacity-100 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300"
 										: activeCardId
@@ -170,7 +170,7 @@ export function SourcesHoverLinks({
 						e.stopPropagation();
 						setShowAllLinks(true);
 					}}
-					className="inline-flex min-h-11 items-center rounded-[20px] border border-slate-200/70 bg-slate-50/90 px-3.5 py-2 text-[11px] font-medium text-slate-500 shadow-[0_16px_40px_-26px_rgba(15,23,42,0.14)] transition-[background-color,box-shadow,color,border-color] hover:border-slate-300/70 hover:bg-white hover:text-slate-900 hover:shadow-[0_16px_40px_-22px_rgba(15,23,42,0.16)] dark:border-white/10 dark:bg-neutral-900/80 dark:text-slate-400 dark:shadow-[0_16px_40px_-26px_rgba(0,0,0,0.48)] dark:hover:border-white/15 dark:hover:bg-neutral-950 dark:hover:text-slate-100"
+					className="inline-flex min-h-11 items-center rounded-[var(--app-radius)] border border-slate-200/70 bg-slate-50/90 px-3.5 py-2 text-[11px] font-medium text-slate-500 shadow-[0_16px_40px_-26px_rgba(15,23,42,0.14)] transition-[background-color,box-shadow,color,border-color] hover:border-slate-300/70 hover:bg-white hover:text-slate-900 hover:shadow-[0_16px_40px_-22px_rgba(15,23,42,0.16)] dark:border-white/10 dark:bg-neutral-900/80 dark:text-slate-400 dark:shadow-[0_16px_40px_-26px_rgba(0,0,0,0.48)] dark:hover:border-white/15 dark:hover:bg-neutral-950 dark:hover:text-slate-100"
 					type="button"
 				>
 					+{remainingCount} more

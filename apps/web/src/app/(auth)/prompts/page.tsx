@@ -983,7 +983,7 @@ export default function Prompts() {
 												<>
 													<TableCell className="px-2 py-5 text-center text-sm whitespace-normal sm:px-4 sm:whitespace-normal">
 														<span
-															className="inline-flex min-w-[2rem] items-center justify-center rounded-full px-2 py-1 font-semibold text-xs"
+															className="inline-flex min-w-[2rem] items-center justify-center rounded-[var(--app-radius)] px-2 py-1 font-semibold text-xs"
 															style={{
 																color:
 																	metrics.geoScore >= 60
@@ -1004,7 +1004,7 @@ export default function Prompts() {
 													</TableCell>
 
 													<TableCell className="px-2 py-5 text-center text-gray-700 text-sm whitespace-normal dark:text-gray-300 sm:px-4 sm:whitespace-normal">
-														<span className="inline-block rounded-full bg-gray-100 px-2 py-1 font-medium text-gray-700 text-xs dark:bg-gray-800 dark:text-gray-300">
+														<span className="inline-block rounded-[var(--app-radius)] bg-gray-100 px-2 py-1 font-medium text-gray-700 text-xs dark:bg-gray-800 dark:text-gray-300">
 															{metrics.visibility}%
 														</span>
 													</TableCell>
@@ -1137,7 +1137,7 @@ export default function Prompts() {
 																<img
 																	src={getModelFavicon(record.model_provider)}
 																	alt={record.model_provider}
-																	className="h-7 w-7 rounded-[12px]"
+																	className="h-7 w-7 rounded-[var(--app-radius)]"
 																/>
 
 																<div className="flex flex-col">
@@ -1247,7 +1247,7 @@ export default function Prompts() {
 																)}
 															>
 																<div className="flex items-center gap-2">
-																	<div className="h-2 w-2 animate-pulse rounded-full bg-blue-500" />
+																	<div className="h-2 w-2 animate-pulse rounded-[var(--app-radius)] bg-blue-500" />
 																	<span className="text-xs text-gray-500 dark:text-gray-400">
 																		Analysis in progress...
 																	</span>

@@ -8,11 +8,12 @@ import {
 import {
 	useProviderConnectionAction,
 	useProviderConnections,
+	useResetAllProviders,
 } from "@/lib/provider-connections/client";
 import type { ProviderConnectionCard } from "@/lib/provider-connections/types";
 import { Button, toast } from "@oneglanse/ui";
 import { cn, getModelFavicon } from "@oneglanse/utils";
-import { Loader2, RotateCw } from "lucide-react";
+import { Loader2, RotateCcw, RotateCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 const CARD_ORDER: Array<ProviderConnectionCard["provider"]> = [
@@ -61,6 +62,24 @@ function getConnectionStatusLabel(
 	}
 
 	return card.status.connected ? "Saved locally" : "";
+}
+
+function getConnectionStatusMessage(
+	card: ProviderConnectionCard,
+): string | null {
+	if (card.status.error) {
+		return card.status.error;
+	}
+
+	if (card.status.connecting) {
+		return "Finish the sign-in flow and close the provider browser window to activate this provider.";
+	}
+
+	if (!card.authFileExists) {
+		return `Auth file not found at ${card.authFilePath}`;
+	}
+
+	return null;
 }
 
 function getConnectionCardClasses(card: ProviderConnectionCard): string {
@@ -132,6 +151,14 @@ export function ProviderConnectionsPanel(props: {
 			toast.error(error.message);
 		},
 	});
+	const resetAllMutation = useResetAllProviders({
+		onSuccess: () => {
+			toast.success("All provider sessions have been reset.");
+		},
+		onError: (error) => {
+			toast.error(error.message);
+		},
+	});
 	const cards = sortConnectionCards(authProvidersQuery.data?.cards ?? []);
 	const hasAtLeastOneConnection = cards.some((card) => card.status.connected);
 	const isAnyConnectionPending =
@@ -141,36 +168,57 @@ export function ProviderConnectionsPanel(props: {
 	return (
 		<section>
 			{title || description ? (
-				<div className="mb-6 max-w-2xl space-y-1.5">
-					{title ? (
-						<h2 className="text-lg font-semibold tracking-[-0.025em] text-gray-900 sm:text-xl dark:text-gray-100">
-							{title}
-						</h2>
-					) : null}
-					{description ? (
-						<p className="text-sm leading-6 text-gray-500 dark:text-gray-400">
-							{description}
-						</p>
+				<div className="mb-6 flex max-w-2xl items-start justify-between gap-4">
+					<div className="space-y-1.5">
+						{title ? (
+							<h2 className="text-lg font-semibold tracking-[-0.025em] text-gray-900 sm:text-xl dark:text-gray-100">
+								{title}
+							</h2>
+						) : null}
+						{description ? (
+							<p className="text-sm leading-6 text-gray-500 dark:text-gray-400">
+								{description}
+							</p>
+						) : null}
+					</div>
+					{hasAtLeastOneConnection ? (
+						<Button
+							variant="ghost"
+							className={cn(
+								formSecondaryButtonClassName,
+								"shrink-0 gap-1.5 text-gray-500",
+							)}
+							onClick={() => resetAllMutation.mutate()}
+							disabled={resetAllMutation.isPending || isAnyConnectionPending}
+							title="Reset all provider sessions"
+						>
+							{resetAllMutation.isPending ? (
+								<Loader2 className="h-3.5 w-3.5 animate-spin" />
+							) : (
+								<RotateCcw className="h-3.5 w-3.5" />
+							)}
+							Reset all
+						</Button>
 					) : null}
 				</div>
 			) : null}
 
 			{authProvidersQuery.isLoading ? (
-				<div className="mb-6 flex items-center gap-2 rounded-2xl border border-gray-200/80 px-4 py-3 text-sm text-gray-500 dark:border-gray-800 dark:text-gray-400">
+				<div className="mb-6 flex items-center gap-2 rounded-[var(--app-radius)] border border-gray-200/80 px-4 py-3 text-sm text-gray-500 dark:border-gray-800 dark:text-gray-400">
 					<Loader2 className="h-4 w-4 animate-spin" />
 					Loading providers...
 				</div>
 			) : null}
 
 			{authProvidersQuery.error ? (
-				<p className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-200">
+				<p className="mb-6 rounded-[var(--app-radius)] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-200">
 					{authProvidersQuery.error.message}
 				</p>
 			) : null}
 
 			{showSetupNotice &&
 			!authProvidersQuery.data?.interactiveConnectAllowed ? (
-				<p className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+				<p className="mb-6 rounded-[var(--app-radius)] border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
 					To connect or refresh providers, run{" "}
 					<code className="rounded px-1 font-mono text-xs">pnpm auth</code> on
 					your local machine, then finish sign-in on the local{" "}
@@ -219,7 +267,7 @@ export function ProviderConnectionsPanel(props: {
 										<img
 											src={getModelFavicon(primaryProvider)}
 											alt={cardTitle}
-											className="h-7 w-7 shrink-0 rounded-md sm:h-8 sm:w-8"
+											className="h-7 w-7 shrink-0 rounded-[var(--app-radius)] sm:h-8 sm:w-8"
 										/>
 
 										<div className="min-w-0">
@@ -231,9 +279,9 @@ export function ProviderConnectionsPanel(props: {
 													{cardTitle}
 												</p>
 											</div>
-											{status.error ? (
+											{getConnectionStatusMessage(card) ? (
 												<p className="mt-1.5 text-sm leading-5 text-red-500 dark:text-red-300">
-													{status.error}
+													{getConnectionStatusMessage(card)}
 												</p>
 											) : null}
 										</div>
@@ -244,7 +292,7 @@ export function ProviderConnectionsPanel(props: {
 									{statusLabel ? (
 										<span
 											className={cn(
-												"inline-flex items-center rounded-[24px] px-3 py-1 text-[10px] font-medium tracking-[0.02em]",
+												"inline-flex items-center rounded-[var(--app-radius)] px-3 py-1 text-[10px] font-medium tracking-[0.02em]",
 												getConnectionBadgeClasses(card),
 											)}
 										>
@@ -279,7 +327,7 @@ export function ProviderConnectionsPanel(props: {
 											size="icon"
 											className={cn(
 												formSecondaryButtonClassName,
-												"size-11 rounded-[24px] p-0 text-gray-500 dark:text-gray-300",
+												"size-11 rounded-[var(--app-radius)] p-0 text-gray-500 dark:text-gray-300",
 											)}
 											onClick={() =>
 												providerActionMutation.mutate({

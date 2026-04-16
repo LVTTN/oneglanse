@@ -13,7 +13,7 @@ export const PositionMetricCell = ({
 
 	return (
 		<div
-			className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${color}`}
+			className={`inline-flex items-center justify-center w-6 h-6 rounded-[var(--app-radius)] text-xs font-medium ${color}`}
 		>
 			{num}
 		</div>
@@ -40,16 +40,15 @@ export const SentimentMetricCell = ({
 			"bg-amber-50 text-amber-700 dark:bg-amber-950/55 dark:text-amber-300";
 		dotClass = "bg-amber-500 dark:bg-amber-400";
 	} else {
-		bgClass =
-			"bg-rose-50 text-rose-700 dark:bg-rose-950/55 dark:text-rose-300";
+		bgClass = "bg-rose-50 text-rose-700 dark:bg-rose-950/55 dark:text-rose-300";
 		dotClass = "bg-rose-500 dark:bg-rose-400";
 	}
 
 	return (
 		<div
-			className={`inline-flex items-center gap-2 px-2 py-1 rounded-md text-sm font-medium ${bgClass}`}
+			className={`inline-flex items-center gap-2 px-2 py-1 rounded-[var(--app-radius)] text-sm font-medium ${bgClass}`}
 		>
-			<span className={`w-2 h-2 rounded-full ${dotClass}`} />
+			<span className={`w-2 h-2 rounded-[var(--app-radius)] ${dotClass}`} />
 			{num}
 		</div>
 	);

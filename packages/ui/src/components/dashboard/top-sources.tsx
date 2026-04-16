@@ -46,14 +46,14 @@ export function TopSources({
 						return (
 							<div
 								key={source.domain}
-								className="ui-list-item group grid min-w-0 grid-cols-[1fr_auto] items-center gap-3 rounded-[22px] border border-gray-100/80 bg-white px-4 py-3 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] hover:border-gray-200 hover:bg-stone-50 dark:border-gray-800 dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)] dark:hover:bg-neutral-900"
+								className="ui-list-item group grid min-w-0 grid-cols-[1fr_auto] items-center gap-3 rounded-[var(--app-radius)] border border-gray-100/80 bg-white px-4 py-3 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] hover:border-gray-200 hover:bg-stone-50 dark:border-gray-800 dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)] dark:hover:bg-neutral-900"
 							>
 								<div className="flex min-w-0 items-start gap-3">
 									{faviconUrl && (
 										<img
 											src={faviconUrl}
 											alt=""
-											className="h-5 w-5 shrink-0 rounded-md object-contain transition-transform duration-200 group-hover:scale-105"
+											className="h-5 w-5 shrink-0 rounded-[var(--app-radius)] object-contain transition-transform duration-200 group-hover:scale-105"
 											onError={(e) => {
 												(e.target as HTMLImageElement).style.visibility =
 													"hidden";
@@ -67,16 +67,16 @@ export function TopSources({
 										</p>
 
 										<div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-											<span className="rounded-full border border-transparent bg-stone-50 px-2 py-0.5 text-[10px] font-medium text-gray-500 dark:border-transparent dark:bg-neutral-900/80 dark:text-gray-400">
+											<span className="rounded-[var(--app-radius)] border border-transparent bg-stone-50 px-2 py-0.5 text-[10px] font-medium text-gray-500 dark:border-transparent dark:bg-neutral-900/80 dark:text-gray-400">
 												{formatCitationLabel(source.citationCount)}
 											</span>
-											<span className="rounded-full border border-transparent bg-stone-50 px-2 py-0.5 text-[10px] font-medium text-gray-500 dark:border-transparent dark:bg-neutral-900/80 dark:text-gray-400">
+											<span className="rounded-[var(--app-radius)] border border-transparent bg-stone-50 px-2 py-0.5 text-[10px] font-medium text-gray-500 dark:border-transparent dark:bg-neutral-900/80 dark:text-gray-400">
 												{source.models.size} models
 											</span>
-											<span className="rounded-full border border-transparent bg-stone-50 px-2 py-0.5 text-[10px] font-medium text-gray-500 dark:border-transparent dark:bg-neutral-900/80 dark:text-gray-400">
+											<span className="rounded-[var(--app-radius)] border border-transparent bg-stone-50 px-2 py-0.5 text-[10px] font-medium text-gray-500 dark:border-transparent dark:bg-neutral-900/80 dark:text-gray-400">
 												{source.uniqueRecords.size} responses
 											</span>
-											<span className="rounded-full border border-transparent bg-stone-50 px-2 py-0.5 text-[10px] font-medium text-gray-500 dark:border-transparent dark:bg-neutral-900/80 dark:text-gray-400">
+											<span className="rounded-[var(--app-radius)] border border-transparent bg-stone-50 px-2 py-0.5 text-[10px] font-medium text-gray-500 dark:border-transparent dark:bg-neutral-900/80 dark:text-gray-400">
 												#{idx + 1}
 											</span>
 										</div>

@@ -3,6 +3,7 @@
 import { api } from "@/trpc/react";
 import { PROVIDER_LIST, type Provider } from "@oneglanse/types";
 import { ProviderRunStatusCard, toast } from "@oneglanse/ui";
+import { getProviderDisplayName } from "@oneglanse/utils";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 type ProviderState = "pending" | "running" | "completed" | "failed" | "stopped";
@@ -19,6 +20,23 @@ type DisplayPhase = "running" | "completed" | "failed" | "stopped";
 const PROVIDER_RUN_TOAST_ID = "provider-run-progress";
 const COMPLETION_TOAST_DURATION_MS = 1400;
 const STOPPED_HANDOFF_DELAY_MS = 350;
+
+export function showDisconnectedProvidersToast(args: {
+	disconnectedProviders?: string[];
+}) {
+	const providers = (args.disconnectedProviders ?? [])
+		.filter(Boolean)
+		.map((provider) => getProviderDisplayName(provider));
+	const description =
+		providers.length > 0
+			? `Connect at least one provider to continue. Missing: ${providers.join(", ")}.`
+			: "Connect at least one provider to continue.";
+
+	toast.error("Providers are not connected.", {
+		id: PROVIDER_RUN_TOAST_ID,
+		description,
+	});
+}
 
 function ProviderRunToastCard({
 	provider,

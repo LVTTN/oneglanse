@@ -55,6 +55,11 @@ async function startProviderConnection({
 	return readJson<{ started: boolean }>(response);
 }
 
+async function resetAllProviders(): Promise<{ ok: boolean }> {
+	const response = await fetch("/api/providers", { method: "DELETE" });
+	return readJson<{ ok: boolean }>(response);
+}
+
 export function useProviderConnections(options?: {
 	initialData?: ProviderConnectionsState;
 }) {
@@ -85,6 +90,27 @@ export function useProviderConnectionAction(
 
 	return useMutation({
 		mutationFn: startProviderConnection,
+		onSettled: async (...args) => {
+			await queryClient.invalidateQueries({
+				queryKey: PROVIDER_CONNECTIONS_QUERY_KEY,
+			});
+			await onSettled?.(...args);
+		},
+		...restOptions,
+	});
+}
+
+export function useResetAllProviders(
+	options?: Omit<
+		UseMutationOptions<{ ok: boolean }, Error, void>,
+		"mutationFn"
+	>,
+) {
+	const queryClient = useQueryClient();
+	const { onSettled, ...restOptions } = options ?? {};
+
+	return useMutation({
+		mutationFn: resetAllProviders,
 		onSettled: async (...args) => {
 			await queryClient.invalidateQueries({
 				queryKey: PROVIDER_CONNECTIONS_QUERY_KEY,

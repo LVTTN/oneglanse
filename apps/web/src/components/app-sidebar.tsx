@@ -208,7 +208,7 @@ export function AppSidebar({
 												<img
 													src={activeWorkspaceFavicon}
 													alt=""
-													className="h-4 w-4 shrink-0 rounded-sm"
+													className="h-4 w-4 shrink-0 rounded-[var(--app-radius)]"
 													onError={() =>
 														setFailedWorkspaceFavicon(activeWorkspaceFavicon)
 													}
@@ -226,7 +226,7 @@ export function AppSidebar({
 									</SidebarMenuButton>
 								</DropdownMenuTrigger>
 								<DropdownMenuContent
-									className="min-w-0 rounded-[24px] border-transparent bg-white p-1.5 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_18px_-14px_rgba(15,23,42,0.12)] dark:bg-neutral-950 dark:shadow-[0_1px_2px_rgba(0,0,0,0.14),0_10px_24px_-16px_rgba(0,0,0,0.4)]"
+									className="min-w-0 rounded-[var(--app-radius)] border-transparent bg-white p-1.5 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_18px_-14px_rgba(15,23,42,0.12)] dark:bg-neutral-950 dark:shadow-[0_1px_2px_rgba(0,0,0,0.14),0_10px_24px_-16px_rgba(0,0,0,0.4)]"
 									style={{
 										width: "var(--radix-dropdown-menu-trigger-width)",
 										maxWidth: "var(--radix-dropdown-menu-trigger-width)",
@@ -252,7 +252,7 @@ export function AppSidebar({
 													<DropdownMenuItem
 														key={ws.id}
 														onClick={() => handleSwitchWorkspace(ws)}
-														className="flex items-center gap-2 rounded-lg"
+														className="flex items-center gap-2 rounded-[var(--app-radius)]"
 													>
 														<img
 															src={
@@ -260,7 +260,7 @@ export function AppSidebar({
 																""
 															}
 															alt=""
-															className="w-4 h-4 rounded-sm shrink-0"
+															className="w-4 h-4 rounded-[var(--app-radius)] shrink-0"
 														/>
 														<span className="truncate">{ws.name}</span>
 														{ws.id === activeWorkspace?.id && (
@@ -309,7 +309,7 @@ export function AppSidebar({
 										<SidebarMenuButton
 											asChild
 											isActive={pathname === item.url.split("?")[0]}
-											className="h-11 rounded-[24px] px-4 text-[13px] font-medium"
+											className="h-11 rounded-[var(--app-radius)] px-4 text-[13px] font-medium"
 										>
 											<Link href={item.url}>
 												<item.icon />
@@ -332,7 +332,7 @@ export function AppSidebar({
 										<SidebarMenuButton
 											asChild
 											isActive={pathname === item.url.split("?")[0]}
-											className="h-11 rounded-[24px] px-4 text-[13px] font-medium"
+											className="h-11 rounded-[var(--app-radius)] px-4 text-[13px] font-medium"
 										>
 											<Link href={item.url}>
 												<item.icon />
@@ -367,7 +367,7 @@ export function AppSidebar({
 								<DropdownMenuContent
 									side="top"
 									sideOffset={8}
-									className="min-w-0 rounded-[24px] border-transparent bg-white p-1.5 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_18px_-14px_rgba(15,23,42,0.12)] dark:bg-neutral-950 dark:shadow-[0_1px_2px_rgba(0,0,0,0.14),0_10px_24px_-16px_rgba(0,0,0,0.4)]"
+									className="min-w-0 rounded-[var(--app-radius)] border-transparent bg-white p-1.5 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_18px_-14px_rgba(15,23,42,0.12)] dark:bg-neutral-950 dark:shadow-[0_1px_2px_rgba(0,0,0,0.14),0_10px_24px_-16px_rgba(0,0,0,0.4)]"
 									style={{
 										width: "var(--radix-dropdown-menu-trigger-width)",
 										maxWidth: "var(--radix-dropdown-menu-trigger-width)",

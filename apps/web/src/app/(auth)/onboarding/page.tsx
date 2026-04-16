@@ -7,7 +7,9 @@ import {
 	formSecondaryButtonClassName,
 	formSurfaceClassName,
 } from "@/components/forms/auth-form-chrome";
+import { showDisconnectedProvidersToast } from "@/components/provider-run-toast";
 import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
+import { useProviderConnections } from "@/lib/provider-connections/client";
 import { api } from "@/trpc/react";
 import {
 	Button,
@@ -43,6 +45,7 @@ export default function FirstWorkspaceOnboardingPage() {
 		{ workspaceId },
 		{ enabled: !!workspaceId },
 	);
+	const providerConnectionsQuery = useProviderConnections();
 	const storePrompts = api.prompt.store.useMutation();
 	const runAgent = api.agent.run.useMutation();
 
@@ -95,6 +98,17 @@ export default function FirstWorkspaceOnboardingPage() {
 		try {
 			await storePrompts.mutateAsync({ workspaceId, prompts });
 			const run = await runAgent.mutateAsync({ workspaceId });
+			if (run.status === "no-providers") {
+				showDisconnectedProvidersToast({
+					disconnectedProviders:
+						run.disconnectedProviders.length > 0
+							? run.disconnectedProviders
+							: providerConnectionsQuery.data?.cards
+									.filter((card) => !card.status.connected)
+									.map((card) => card.displayName),
+				});
+				return;
+			}
 			const jobId = run?.jobId;
 			if (!jobId) {
 				toast.error("Prompts were saved, but the run could not be started.");
@@ -122,13 +136,13 @@ export default function FirstWorkspaceOnboardingPage() {
 				<Card className={formSurfaceClassName}>
 					{/* Header: favicon left, title + subtitle stacked right */}
 					<CardHeader className="flex items-center gap-3 px-4 py-5 sm:px-5 sm:py-4.5 xl:gap-4 xl:px-6 xl:py-5.5">
-						<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-stone-100 dark:bg-gray-900 xl:h-10 xl:w-10 xl:rounded-[14px]">
+						<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--app-radius)] bg-stone-100 dark:bg-gray-900 xl:h-10 xl:w-10 xl:rounded-[var(--app-radius)]">
 							{faviconUrl && !faviconError ? (
 								<img
 									src={faviconUrl}
 									onError={() => setFaviconError(true)}
 									alt={brandName}
-									className="h-4.5 w-4.5 rounded-sm object-contain xl:h-5.5 xl:w-5.5"
+									className="h-4.5 w-4.5 rounded-[var(--app-radius)] object-contain xl:h-5.5 xl:w-5.5"
 								/>
 							) : (
 								<Sparkles className="h-4 w-4 text-gray-700 dark:text-gray-200 xl:h-5 xl:w-5" />
@@ -165,7 +179,7 @@ export default function FirstWorkspaceOnboardingPage() {
 									type="button"
 									onClick={() => addPrompt(inputValue)}
 									disabled={!inputValue.trim() || isPending}
-									className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 transition hover:bg-stone-50 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100 xl:h-10 xl:w-10"
+									className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--app-radius)] border border-gray-200 bg-white text-gray-600 transition hover:bg-stone-50 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100 xl:h-10 xl:w-10"
 								>
 									<Plus className="h-3.5 w-3.5 xl:h-4 xl:w-4" />
 								</button>
@@ -188,7 +202,7 @@ export default function FirstWorkspaceOnboardingPage() {
 									{prompts.map((prompt, index) => (
 										<div
 											key={`${index}-${prompt}`}
-											className="flex items-center gap-1 rounded-full border border-gray-200/80 bg-stone-50 py-1 pl-2.5 pr-1.5 dark:border-gray-800 dark:bg-gray-900 xl:gap-1.5 xl:py-1.5 xl:pl-3 xl:pr-2"
+											className="flex items-center gap-1 rounded-[var(--app-radius)] border border-gray-200/80 bg-stone-50 py-1 pl-2.5 pr-1.5 dark:border-gray-800 dark:bg-gray-900 xl:gap-1.5 xl:py-1.5 xl:pl-3 xl:pr-2"
 										>
 											<span className="max-w-[160px] truncate text-[10.5px] text-gray-700 dark:text-gray-300 sm:max-w-[200px] xl:max-w-[260px] xl:text-[12px]">
 												{prompt}
@@ -197,7 +211,7 @@ export default function FirstWorkspaceOnboardingPage() {
 												type="button"
 												onClick={() => removePrompt(index)}
 												disabled={isPending}
-												className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-gray-400 transition hover:bg-gray-200/70 hover:text-gray-700 dark:text-gray-500 dark:hover:bg-gray-700/60 dark:hover:text-gray-200 xl:h-5 xl:w-5"
+												className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[var(--app-radius)] text-gray-400 transition hover:bg-gray-200/70 hover:text-gray-700 dark:text-gray-500 dark:hover:bg-gray-700/60 dark:hover:text-gray-200 xl:h-5 xl:w-5"
 											>
 												<X className="h-2.5 w-2.5 xl:h-3 xl:w-3" />
 											</button>
@@ -222,7 +236,7 @@ export default function FirstWorkspaceOnboardingPage() {
 											onClick={() => addPrompt(prompt)}
 											disabled={alreadyAdded || isPending}
 											className={cn(
-												"group w-full rounded-2xl border border-gray-200/80 bg-white px-4 py-3 text-left shadow-[0_2px_8px_-4px_rgba(0,0,0,0.06)] transition duration-150 xl:px-5 xl:py-4",
+												"group w-full rounded-[var(--app-radius)] border border-gray-200/80 bg-white px-4 py-3 text-left shadow-[0_2px_8px_-4px_rgba(0,0,0,0.06)] transition duration-150 xl:px-5 xl:py-4",
 												"hover:border-gray-300 hover:shadow-[0_4px_14px_-6px_rgba(0,0,0,0.1)]",
 												"dark:border-gray-800 dark:bg-neutral-950 dark:shadow-[0_2px_8px_-4px_rgba(0,0,0,0.3)]",
 												"dark:hover:border-gray-700 dark:hover:shadow-[0_4px_14px_-6px_rgba(0,0,0,0.4)]",

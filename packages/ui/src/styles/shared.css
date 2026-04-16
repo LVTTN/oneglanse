@@ -1,4 +1,5 @@
 :root {
+	--app-radius: 1rem;
 	--motion-duration-fast: 140ms;
 	--motion-duration-base: 180ms;
 	--motion-duration-slow: 260ms;

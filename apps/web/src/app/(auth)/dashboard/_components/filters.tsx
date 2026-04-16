@@ -54,7 +54,7 @@ export function DashboardFilters({
 					<img
 						src={faviconUrls[0]}
 						alt=""
-						className="h-4 w-4 rounded-sm"
+						className="h-4 w-4 rounded-[var(--app-radius)]"
 						onError={(e) => {
 							(e.target as HTMLImageElement).style.display = "none";
 						}}

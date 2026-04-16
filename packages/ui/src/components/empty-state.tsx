@@ -57,7 +57,7 @@ export function EmptyStatePanel({
 		<div className={cn("web-centered-state", className)}>
 			<div
 				className={cn(
-					`${EMPTY_STATE_PANEL_WIDTH_CLASS} ${EMPTY_STATE_PANEL_HEIGHT_CLASS} flex flex-col rounded-[24px] border border-gray-100/80 bg-white px-4 py-4 text-center shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] dark:border-gray-800 dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)] sm:px-5 sm:py-5 xl:rounded-[28px] xl:px-7 xl:py-7`,
+					`${EMPTY_STATE_PANEL_WIDTH_CLASS} ${EMPTY_STATE_PANEL_HEIGHT_CLASS} flex flex-col rounded-[var(--app-radius)] border border-gray-100/80 bg-white px-4 py-4 text-center shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] dark:border-gray-800 dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)] sm:px-5 sm:py-5 xl:rounded-[var(--app-radius)] xl:px-7 xl:py-7`,
 					contentClassName,
 				)}
 			>
@@ -70,7 +70,7 @@ export function EmptyStatePanel({
 				>
 					<div className="pb-2 sm:pb-2.5 xl:pb-3">
 						{eyebrow ? (
-							<div className="mt-0 inline-flex items-center self-center rounded-full border border-gray-200/80 bg-stone-50 px-3 py-1 text-[9px] font-medium uppercase tracking-[0.1em] text-gray-500 dark:border-gray-800 dark:bg-neutral-900 dark:text-gray-400 sm:text-[10px]">
+							<div className="mt-0 inline-flex items-center self-center rounded-[var(--app-radius)] border border-gray-200/80 bg-stone-50 px-3 py-1 text-[9px] font-medium uppercase tracking-[0.1em] text-gray-500 dark:border-gray-800 dark:bg-neutral-900 dark:text-gray-400 sm:text-[10px]">
 								{eyebrow}
 							</div>
 						) : null}
@@ -91,7 +91,7 @@ export function EmptyStatePanel({
 					<div className="h-2.5 sm:h-3 xl:h-3.5" />
 
 					{hasExamples ? (
-						<div className="mx-auto w-full max-w-xl rounded-[20px] bg-stone-50/90 p-2.5 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] dark:bg-neutral-900/80 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] sm:p-3 xl:rounded-[22px] xl:p-3.5">
+						<div className="mx-auto w-full max-w-xl rounded-[var(--app-radius)] bg-stone-50/90 p-2.5 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] dark:bg-neutral-900/80 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] sm:p-3 xl:rounded-[var(--app-radius)] xl:p-3.5">
 							<p className="px-1 text-[10px] font-medium uppercase tracking-[0.12em] text-gray-500 dark:text-gray-400 sm:text-[11px]">
 								{examplesLabel}
 							</p>
@@ -99,7 +99,7 @@ export function EmptyStatePanel({
 								{examples?.map((example) => (
 									<div
 										key={typeof example === "string" ? example : example.label}
-										className="flex items-center gap-2 rounded-[15px] bg-white/90 px-3 py-2 text-[12px] font-normal leading-[1.45] text-gray-700 shadow-[0_8px_24px_-20px_rgba(15,23,42,0.22)] dark:bg-neutral-950 dark:text-gray-200 dark:shadow-[0_8px_24px_-20px_rgba(0,0,0,0.5)] sm:gap-2.5 sm:rounded-[16px] sm:text-sm sm:leading-5"
+										className="flex items-center gap-2 rounded-[var(--app-radius)] bg-white/90 px-3 py-2 text-[12px] font-normal leading-[1.45] text-gray-700 shadow-[0_8px_24px_-20px_rgba(15,23,42,0.22)] dark:bg-neutral-950 dark:text-gray-200 dark:shadow-[0_8px_24px_-20px_rgba(0,0,0,0.5)] sm:gap-2.5 sm:rounded-[var(--app-radius)] sm:text-sm sm:leading-5"
 									>
 										{typeof example !== "string" && example.icon ? (
 											<example.icon className="h-3.5 w-3.5 shrink-0 text-gray-400 dark:text-gray-500 sm:h-4 sm:w-4" />
@@ -120,7 +120,7 @@ export function EmptyStatePanel({
 									key={item}
 									className="flex items-start gap-2 border-gray-200/70 px-1 py-1.5 text-[12px] text-gray-600 dark:border-gray-800 dark:text-gray-300 sm:py-2 sm:text-sm"
 								>
-									<span className="mt-[0.45rem] h-1.5 w-1.5 shrink-0 rounded-full bg-gray-400 dark:bg-gray-500" />
+									<span className="mt-[0.45rem] h-1.5 w-1.5 shrink-0 rounded-[var(--app-radius)] bg-gray-400 dark:bg-gray-500" />
 									<span className="leading-[1.45] sm:leading-5">{item}</span>
 								</div>
 							))}

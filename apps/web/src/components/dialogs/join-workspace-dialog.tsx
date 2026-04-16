@@ -129,7 +129,7 @@ export function JoinWorkspaceDialog({
 				</div>
 
 				{selection && (
-					<div className="space-y-3 rounded-[24px] border border-dashed border-gray-200/80 bg-stone-50/80 p-4 dark:border-gray-800 dark:bg-gray-900/60">
+					<div className="space-y-3 rounded-[var(--app-radius)] border border-dashed border-gray-200/80 bg-stone-50/80 p-4 dark:border-gray-800 dark:bg-gray-900/60">
 						<p className="text-sm text-gray-600 dark:text-gray-300">
 							Select a workspace in{" "}
 							<strong>{selection.organization.name}</strong>
@@ -143,7 +143,7 @@ export function JoinWorkspaceDialog({
 									onClick={() => handleSelectWorkspace(ws.slug)}
 									className={cn(
 										formSecondaryButtonClassName,
-										"h-9 rounded-xl px-3",
+										"h-9 rounded-[var(--app-radius)] px-3",
 									)}
 								>
 									{ws.name}

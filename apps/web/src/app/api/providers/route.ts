@@ -1,5 +1,8 @@
 import { readProviderConnectionsState } from "@/lib/provider-connections/server";
-import { spawnProviderAuthLogin } from "@oneglanse/services";
+import {
+	resetProviderAuthData,
+	spawnProviderAuthLogin,
+} from "@oneglanse/services";
 import { AUTH_PROVIDER_LIST } from "@oneglanse/types";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -26,6 +29,23 @@ export async function POST(request: Request) {
 				error: error instanceof Error ? error.message : "Invalid request",
 			},
 			{ status: 400 },
+		);
+	}
+}
+
+export async function DELETE() {
+	try {
+		await Promise.all(
+			AUTH_PROVIDER_LIST.map((provider) => resetProviderAuthData(provider)),
+		);
+		return NextResponse.json({ ok: true });
+	} catch (error) {
+		return NextResponse.json(
+			{
+				error:
+					error instanceof Error ? error.message : "Failed to reset providers",
+			},
+			{ status: 500 },
 		);
 	}
 }

@@ -871,11 +871,25 @@ export function getAuthProviderForRuntimeProvider(
 	return getAuthProviderForProvider(provider);
 }
 
+export async function isAuthProviderReady(
+	provider: AuthProvider,
+): Promise<boolean> {
+	const [storedStatus, sessionState] = await Promise.all([
+		readPersistedAuthStatus(provider),
+		readAuthSession(provider),
+	]);
+	const hasAuthFile = existsSync(getAuthSessionFile(provider));
+	const browserStillOpen =
+		Boolean(storedStatus?.connecting) && isProcessAlive(storedStatus?.launcherPid);
+
+	return hasAuthFile && hasUsableAuthState(sessionState) && !browserStillOpen;
+}
+
 export async function hasRuntimeProviderAuth(
 	provider: Provider,
 ): Promise<boolean> {
 	const authProvider = getAuthProviderForRuntimeProvider(provider);
-	return hasUsableAuthState(await readAuthSession(authProvider));
+	return isAuthProviderReady(authProvider);
 }
 
 export async function readAuthenticatedRuntimeProviders(
@@ -1061,6 +1075,18 @@ export function getAuthProviderCards(): Array<{
 		domain: AUTH_PROVIDER_DISPLAY[provider].domain,
 		providers: [...AUTH_PROVIDER_CONFIG[provider].providers],
 	}));
+}
+
+export async function getMissingRuntimeProviders(
+	providers: readonly Provider[] = PROVIDER_LIST,
+): Promise<Provider[]> {
+	const authenticatedProviders =
+		await readAuthenticatedRuntimeProviders(providers);
+	const authenticatedSet = new Set(authenticatedProviders);
+
+	return [...new Set(providers)].filter(
+		(provider) => !authenticatedSet.has(provider),
+	);
 }
 
 export function getAuthModuleState() {

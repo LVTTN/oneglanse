@@ -29,14 +29,25 @@ export function ProviderRunStatusCard(props: {
 	promptNumber?: number;
 	totalPrompts?: number;
 }) {
-	const { provider, phase, onStop, isStopping = false, promptNumber, totalPrompts } = props;
+	const {
+		provider,
+		phase,
+		onStop,
+		isStopping = false,
+		promptNumber,
+		totalPrompts,
+	} = props;
 	const [subtitleIndex, setSubtitleIndex] = useState(0);
 	const title = getProviderDisplayName(provider);
 	const canStop = phase === "running" && Boolean(onStop);
 
 	const subtitle = useMemo(() => {
 		if (phase === "running") {
-			if (promptNumber !== undefined && totalPrompts !== undefined && totalPrompts > 1) {
+			if (
+				promptNumber !== undefined &&
+				totalPrompts !== undefined &&
+				totalPrompts > 1
+			) {
 				return `Prompt ${promptNumber} of ${totalPrompts}`;
 			}
 			return RUNNING_SUBTITLES[subtitleIndex % RUNNING_SUBTITLES.length];
@@ -62,12 +73,12 @@ export function ProviderRunStatusCard(props: {
 	}, [phase]);
 
 	return (
-		<div className="pointer-events-auto w-[min(360px,calc(100vw-2rem))] rounded-[24px] border border-gray-200/80 bg-white px-4 py-4 shadow-[0_24px_70px_-30px_rgba(15,23,42,0.28)] animate-in fade-in-0 slide-in-from-bottom-2 zoom-in-95 duration-200 dark:border-gray-800 dark:bg-neutral-950 dark:shadow-[0_24px_70px_-30px_rgba(0,0,0,0.62)]">
+		<div className="pointer-events-auto w-[min(360px,calc(100vw-2rem))] rounded-[var(--app-radius)] border border-gray-200/80 bg-white px-4 py-4 shadow-[0_24px_70px_-30px_rgba(15,23,42,0.28)] animate-in fade-in-0 slide-in-from-bottom-2 zoom-in-95 duration-200 dark:border-gray-800 dark:bg-neutral-950 dark:shadow-[0_24px_70px_-30px_rgba(0,0,0,0.62)]">
 			<div className="flex items-center gap-3">
 				<div className="relative shrink-0">
 					<div
 						className={cn(
-							"absolute inset-0 rounded-lg blur-md transition-opacity duration-300",
+							"absolute inset-0 rounded-[var(--app-radius)] blur-md transition-opacity duration-300",
 							phase === "running"
 								? "bg-stone-200/70 opacity-80 dark:bg-white/10"
 								: phase === "completed"
@@ -80,7 +91,7 @@ export function ProviderRunStatusCard(props: {
 					<img
 						src={getModelFavicon(provider)}
 						alt={title}
-						className="relative h-9 w-9 rounded-lg"
+						className="relative h-9 w-9 rounded-[var(--app-radius)]"
 					/>
 				</div>
 				<div className="min-w-0 flex-1">
@@ -118,7 +129,7 @@ export function ProviderRunStatusCard(props: {
 							variant="outline"
 							onClick={() => void onStop?.()}
 							disabled={isStopping}
-							className="h-8 rounded-full border-red-200 bg-red-50 px-2.5 text-red-600 hover:bg-red-100 hover:text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-950/50 dark:hover:text-red-300"
+							className="h-8 rounded-[var(--app-radius)] border-red-200 bg-red-50 px-2.5 text-red-600 hover:bg-red-100 hover:text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-950/50 dark:hover:text-red-300"
 						>
 							{isStopping ? (
 								<Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -131,13 +142,13 @@ export function ProviderRunStatusCard(props: {
 						</Button>
 					) : phase === "running" ? (
 						<div className="flex items-center gap-2">
-							<span className="h-2 w-2 rounded-full bg-gray-400 animate-pulse dark:bg-gray-500" />
+							<span className="h-2 w-2 rounded-[var(--app-radius)] bg-gray-400 animate-pulse dark:bg-gray-500" />
 							<Loader2 className="h-4 w-4 animate-[spin_1.6s_linear_infinite] text-gray-500 dark:text-gray-400" />
 						</div>
 					) : phase === "completed" ? (
 						<CheckCircle2 className="h-4 w-4 text-emerald-500" />
 					) : phase === "stopped" ? (
-						<div className="h-4 w-4 rounded-full border border-slate-400 dark:border-slate-500" />
+						<div className="h-4 w-4 rounded-[var(--app-radius)] border border-slate-400 dark:border-slate-500" />
 					) : (
 						<XCircle className="h-4 w-4 text-red-500" />
 					)}

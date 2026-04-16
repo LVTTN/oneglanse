@@ -114,7 +114,7 @@ export function CompetitiveLandscape({
 					<Table
 						className="w-full"
 						surface="plain"
-						containerClassName="rounded-[24px] bg-white shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)]"
+						containerClassName="rounded-[var(--app-radius)] bg-white shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)]"
 					>
 						<TableHeader>
 							<TableRow className="border-b border-gray-200/80 bg-gray-50/70 dark:border-gray-800 dark:bg-gray-900/40">
@@ -175,7 +175,7 @@ export function CompetitiveLandscape({
 													<img
 														src={favicon}
 														alt=""
-														className="h-4 w-4 shrink-0 rounded-sm"
+														className="h-4 w-4 shrink-0 rounded-[var(--app-radius)]"
 														onError={(e) => {
 															(e.target as HTMLImageElement).style.display =
 																"none";
@@ -188,7 +188,7 @@ export function CompetitiveLandscape({
 															{row.name}
 														</span>
 														{row.isBrand ? (
-															<span className="shrink-0 rounded-full border border-gray-200/70 bg-stone-100 px-2 py-0.5 text-[10px] font-semibold text-gray-700 dark:border-gray-800 dark:bg-neutral-900 dark:text-gray-200">
+															<span className="shrink-0 rounded-[var(--app-radius)] border border-gray-200/70 bg-stone-100 px-2 py-0.5 text-[10px] font-semibold text-gray-700 dark:border-gray-800 dark:bg-neutral-900 dark:text-gray-200">
 																You
 															</span>
 														) : null}

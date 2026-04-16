@@ -189,10 +189,13 @@ export default function SourcesPage(): React.JSX.Element {
 					<Skeleton className="h-10 w-56" />
 					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
 						{SOURCES_METRIC_SKELETON_KEYS.map((key) => (
-							<Skeleton key={key} className="h-28 rounded-2xl" />
+							<Skeleton
+								key={key}
+								className="h-28 rounded-[var(--app-radius)]"
+							/>
 						))}
 					</div>
-					<Skeleton className="h-[280px] rounded-2xl sm:h-[380px] lg:h-[480px]" />
+					<Skeleton className="h-[280px] rounded-[var(--app-radius)] sm:h-[380px] lg:h-[480px]" />
 				</div>
 			</div>
 		);

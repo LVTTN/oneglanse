@@ -1,4 +1,8 @@
-import type { AuthProvider, Provider, ProviderAuthStatus } from "@oneglanse/types";
+import type {
+	AuthProvider,
+	Provider,
+	ProviderAuthStatus,
+} from "@oneglanse/types";
 
 export type ProviderConnectionAction = "connect" | "refresh";
 
@@ -13,6 +17,8 @@ export type ProviderConnectionCard = {
 	connectLabel: string;
 	domain: string;
 	providers: Provider[];
+	authFilePath: string;
+	authFileExists: boolean;
 	status: ProviderAuthStatus;
 };
 

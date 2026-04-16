@@ -5,8 +5,12 @@ import {
 	formPanelClassName,
 	formSecondaryButtonClassName,
 } from "@/components/forms/auth-form-chrome";
-import { useProviderRunToast } from "@/components/provider-run-toast";
+import {
+	showDisconnectedProvidersToast,
+	useProviderRunToast,
+} from "@/components/provider-run-toast";
 import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
+import { useProviderConnections } from "@/lib/provider-connections/client";
 import { api } from "@/trpc/react";
 import type { AppMode } from "@oneglanse/types";
 import {
@@ -15,7 +19,7 @@ import {
 } from "@oneglanse/types";
 import { Button, Skeleton, toast } from "@oneglanse/ui";
 import { cn } from "@oneglanse/utils";
-import { Calendar, Check, Loader2, PlayCircle, Zap } from "lucide-react";
+import { Calendar, Check, Loader2, PlayCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 function localHourToUTC(localHour: number): number {
@@ -121,21 +125,15 @@ function ManualRunView({
 		<div
 			className={cn(formPanelClassName, "space-y-5 px-5 py-5 sm:px-6 sm:py-6")}
 		>
-			<div className="space-y-3">
-				<div className="inline-flex items-center gap-2 rounded-full bg-stone-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-700 dark:bg-neutral-900 dark:text-gray-200">
-					<Zap className="h-3.5 w-3.5" />
-					{mode === "local" ? "Run prompts" : "Manual run"}
-				</div>
-				<div className="space-y-1.5">
-					<h2 className="text-base font-semibold tracking-[-0.02em] text-gray-900 sm:text-lg dark:text-gray-100">
-						{mode === "local" ? "Run prompts now" : "Run prompts now"}
-					</h2>
-					<p className="text-sm leading-6 text-gray-500 dark:text-gray-400">
-						{mode === "local"
-							? "Start a fresh run whenever you want updated responses."
-							: "Trigger an immediate run without changing the recurring schedule."}
-					</p>
-				</div>
+			<div className="space-y-1.5">
+				<h2 className="text-base font-semibold tracking-[-0.02em] text-gray-900 sm:text-lg dark:text-gray-100">
+					Run prompts now
+				</h2>
+				<p className="text-sm leading-6 text-gray-500 dark:text-gray-400">
+					{mode === "local"
+						? "Start a fresh run whenever you want updated responses."
+						: "Trigger an immediate run without changing the recurring schedule."}
+				</p>
 			</div>
 
 			<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -256,7 +254,7 @@ function ScheduleOptionsSection({
 			</div>
 
 			{currentSchedule ? (
-				<div className="flex flex-col gap-3 rounded-[24px] border border-gray-200/80 bg-stone-50 px-4 py-4 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] dark:border-gray-800 dark:bg-neutral-900 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)] sm:flex-row sm:items-center sm:justify-between">
+				<div className="flex flex-col gap-3 rounded-[var(--app-radius)] border border-gray-200/80 bg-stone-50 px-4 py-4 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] dark:border-gray-800 dark:bg-neutral-900 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)] sm:flex-row sm:items-center sm:justify-between">
 					<div className="flex min-w-0 items-center gap-2">
 						<Check className="h-4 w-4 text-gray-700 dark:text-gray-300" />
 						<span className="break-words text-sm font-medium text-gray-900 dark:text-gray-100">
@@ -297,7 +295,7 @@ function ScheduleOptionsSection({
 						</div>
 						<div
 							className={cn(
-								"flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors",
+								"flex h-4 w-4 shrink-0 items-center justify-center rounded-[var(--app-radius)] border transition-colors",
 								selected === option.value
 									? "border-gray-900 bg-gray-900 dark:border-gray-100 dark:bg-gray-100"
 									: "border-gray-300 dark:border-gray-600",
@@ -341,6 +339,7 @@ export default function SchedulePageClient({
 	const workspaceId = initialWorkspaceId ?? searchParams.get("workspace") ?? "";
 	const canConfigureSchedule = canConfigureRecurringScheduleInMode(appMode);
 	const canRunNow = canRunPromptsNowInMode(appMode);
+	const providerConnectionsQuery = useProviderConnections();
 
 	const [selected, setSelected] = useState<string | null>(null);
 	const [saving, setSaving] = useState(false);
@@ -456,6 +455,18 @@ export default function SchedulePageClient({
 				toast.warning("No prompts configured for this workspace.");
 				return;
 			}
+			if (result.status === "no-providers") {
+				setIsRunning(false);
+				showDisconnectedProvidersToast({
+					disconnectedProviders:
+						result.disconnectedProviders.length > 0
+							? result.disconnectedProviders
+							: providerConnectionsQuery.data?.cards
+									.filter((card) => !card.status.connected)
+									.map((card) => card.displayName),
+				});
+				return;
+			}
 			setIsRunning(false);
 			toast.error("Failed to start run.");
 		} catch (err) {
@@ -478,14 +489,11 @@ export default function SchedulePageClient({
 	if (!canConfigureSchedule) {
 		return (
 			<div className="web-page-panel max-w-2xl">
-				<ScheduleIntro mode="local" />
-				<div className="pt-5 sm:pt-6">
-					<ManualRunView
-						isRunning={isRunning || runNowMutation.isPending}
-						onRunNow={handleRunNow}
-						mode="local"
-					/>
-				</div>
+				<ManualRunView
+					isRunning={isRunning || runNowMutation.isPending}
+					onRunNow={handleRunNow}
+					mode="local"
+				/>
 			</div>
 		);
 	}
@@ -535,7 +543,7 @@ export default function SchedulePageClient({
 								<Skeleton className="h-4 w-36" />
 								<Skeleton className="h-3 w-56" />
 							</div>
-							<Skeleton className="h-4 w-4 rounded-full" />
+							<Skeleton className="h-4 w-4 rounded-[var(--app-radius)]" />
 						</div>
 					))}
 				</div>

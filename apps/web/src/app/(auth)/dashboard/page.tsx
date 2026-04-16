@@ -176,7 +176,7 @@ export default function Dashboard() {
 					/>
 
 					{!hasFilteredAnalysis && (
-						<div className="flex items-start gap-2 rounded-[24px] border border-gray-100/80 bg-white px-4 py-4 text-sm text-muted-foreground shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] dark:border-gray-800 dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)]">
+						<div className="flex items-start gap-2 rounded-[var(--app-radius)] border border-gray-100/80 bg-white px-4 py-4 text-sm text-muted-foreground shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] dark:border-gray-800 dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)]">
 							<Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
 							<span>
 								No analysis data for this filter selection. Try another model or

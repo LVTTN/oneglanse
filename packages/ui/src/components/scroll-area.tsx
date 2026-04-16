@@ -18,7 +18,7 @@ function ScrollArea({
 		>
 			<ScrollAreaPrimitive.Viewport
 				data-slot="scroll-area-viewport"
-				className="size-full rounded-[inherit] transition-[color,box-shadow] outline-none"
+				className="size-full rounded-[var(--app-radius)] transition-[color,box-shadow] outline-none"
 			>
 				{children}
 			</ScrollAreaPrimitive.Viewport>
@@ -49,7 +49,7 @@ function ScrollBar({
 		>
 			<ScrollAreaPrimitive.ScrollAreaThumb
 				data-slot="scroll-area-thumb"
-				className="bg-border relative flex-1 rounded-full"
+				className="bg-border relative flex-1 rounded-[var(--app-radius)]"
 			/>
 		</ScrollAreaPrimitive.ScrollAreaScrollbar>
 	);

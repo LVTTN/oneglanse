@@ -186,8 +186,8 @@ export function BrandComparisonChart({
 					</p>
 				</div>
 				<div className="flex flex-1 items-center justify-center">
-					<div className="w-full max-w-md rounded-[24px] border border-gray-100/80 bg-white p-6 text-center shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] dark:border-gray-800 dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)]">
-						<div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-gray-200/70 bg-stone-100 dark:border-gray-800 dark:bg-neutral-900">
+					<div className="w-full max-w-md rounded-[var(--app-radius)] border border-gray-100/80 bg-white p-6 text-center shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] dark:border-gray-800 dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)]">
+						<div className="mx-auto flex h-12 w-12 items-center justify-center rounded-[var(--app-radius)] border border-gray-200/70 bg-stone-100 dark:border-gray-800 dark:bg-neutral-900">
 							<LineChart className="h-5 w-5 text-muted-foreground" />
 						</div>
 						<h3 className="mt-4 text-[13px] font-semibold text-gray-900 sm:text-sm dark:text-gray-100">
@@ -254,7 +254,7 @@ export function BrandComparisonChart({
 						in one view.
 					</p>
 				</div>
-				<span className="max-w-full self-start whitespace-normal break-words rounded-full border border-transparent bg-stone-50 px-3 py-1 text-[11px] font-semibold text-gray-600 shadow-[0_14px_36px_-28px_rgba(15,23,42,0.18)] dark:bg-neutral-900/80 dark:text-gray-300 dark:shadow-[0_14px_36px_-28px_rgba(0,0,0,0.44)]">
+				<span className="max-w-full self-start whitespace-normal break-words rounded-[var(--app-radius)] border border-transparent bg-stone-50 px-3 py-1 text-[11px] font-semibold text-gray-600 shadow-[0_14px_36px_-28px_rgba(15,23,42,0.18)] dark:bg-neutral-900/80 dark:text-gray-300 dark:shadow-[0_14px_36px_-28px_rgba(0,0,0,0.44)]">
 					Leader: {leader?.name ?? "N/A"}
 				</span>
 			</div>
@@ -366,7 +366,7 @@ export function BrandComparisonChart({
 
 					{hoveredPoint && !hoveredBrand && (
 						<div
-							className="pointer-events-none absolute z-50 -translate-x-1/2 -translate-y-[110%] rounded-2xl border border-transparent bg-white px-2.5 py-2 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.28)] dark:border-transparent dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.7)]"
+							className="pointer-events-none absolute z-50 -translate-x-1/2 -translate-y-[110%] rounded-[var(--app-radius)] border border-transparent bg-white px-2.5 py-2 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.28)] dark:border-transparent dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.7)]"
 							style={{
 								left: `${hoveredPoint.leftPx}px`,
 								top: `${hoveredPoint.topPx}px`,
@@ -374,7 +374,7 @@ export function BrandComparisonChart({
 						>
 							<div className="flex items-center gap-1.5">
 								<span
-									className="h-2 w-2 rounded-full"
+									className="h-2 w-2 rounded-[var(--app-radius)]"
 									style={{ backgroundColor: hoveredPoint.color }}
 								/>
 								<p className="max-w-[170px] truncate text-[11px] font-semibold text-gray-900 dark:text-gray-100">
@@ -409,7 +409,7 @@ export function BrandComparisonChart({
 								return (
 									<div
 										key={`${hoveredBrand}-${metric.key}`}
-										className="pointer-events-none absolute z-50 -translate-x-1/2 -translate-y-[110%] rounded-2xl border border-transparent bg-white px-2.5 py-2 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.28)] dark:border-transparent dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.7)]"
+										className="pointer-events-none absolute z-50 -translate-x-1/2 -translate-y-[110%] rounded-[var(--app-radius)] border border-transparent bg-white px-2.5 py-2 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.28)] dark:border-transparent dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.7)]"
 										style={{
 											left: `${leftPx}px`,
 											top: `${topPx}px`,
@@ -417,7 +417,7 @@ export function BrandComparisonChart({
 									>
 										<div className="flex items-center gap-1.5">
 											<span
-												className="h-2 w-2 rounded-full"
+												className="h-2 w-2 rounded-[var(--app-radius)]"
 												style={{ backgroundColor: color }}
 											/>
 											<p className="max-w-[170px] truncate text-[11px] font-semibold text-gray-900 dark:text-gray-100">
@@ -442,7 +442,7 @@ export function BrandComparisonChart({
 						return (
 							<div
 								key={`legend-${s.name}`}
-								className={`ui-list-item cursor-pointer rounded-[22px] border px-3 py-2 transition-all ${
+								className={`ui-list-item cursor-pointer rounded-[var(--app-radius)] border px-3 py-2 transition-all ${
 									s.isBrand
 										? "border-transparent bg-stone-50 dark:border-transparent dark:bg-neutral-900/80"
 										: "border-gray-100/80 bg-white dark:border-gray-800 dark:bg-neutral-950"
@@ -453,7 +453,7 @@ export function BrandComparisonChart({
 								<div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
 									<div className="flex min-w-0 items-center gap-2">
 										<span
-											className="h-2.5 w-2.5 shrink-0 rounded-full"
+											className="h-2.5 w-2.5 shrink-0 rounded-[var(--app-radius)]"
 											style={{ backgroundColor: color }}
 										/>
 										<p className="min-w-0 break-words text-sm font-semibold leading-5 text-gray-900 dark:text-gray-100">

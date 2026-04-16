@@ -330,7 +330,7 @@ export default function SettingsPage() {
 							variant="destructive"
 							className={cn(
 								formPrimaryButtonClassName,
-								"h-10 w-auto shrink-0 self-start px-4 bg-red-600 text-white hover:bg-red-700 dark:bg-red-600 dark:text-white dark:hover:bg-red-500 sm:self-auto",
+								"h-10 w-auto shrink-0 self-start px-4 bg-red-600 text-white hover:bg-red-700 hover:text-white dark:bg-red-600 dark:text-white dark:hover:bg-red-500 dark:hover:text-white sm:self-auto",
 							)}
 							onClick={() => {
 								setDeleteConfirmEmail("");
@@ -345,28 +345,27 @@ export default function SettingsPage() {
 
 			{/* Delete Account Confirmation Dialog */}
 			<Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-				<DialogContent className={formDialogContentClassName}>
-					<DialogHeader className={formDialogHeaderClassName}>
-						<DialogTitle className="text-red-600 dark:text-red-500">
+				<DialogContent className="px-5 py-5 sm:px-6 sm:py-6">
+					<DialogHeader className="space-y-2">
+						<DialogTitle className="text-lg font-semibold tracking-[-0.01em] text-gray-950 dark:text-gray-50">
 							Delete Account
 						</DialogTitle>
-						<DialogDescription className="max-w-md text-sm leading-6 text-gray-500 dark:text-gray-400">
-							This action is permanent and cannot be undone. All your
-							workspaces, prompts, and data will be permanently deleted.
-						</DialogDescription>
 					</DialogHeader>
-					<div className={formDialogBodyClassName}>
-						<div className="rounded-[20px] border border-amber-200 bg-amber-50 px-3 py-3 dark:border-amber-900/60 dark:bg-amber-950/20">
-							<p className="text-xs text-amber-800 dark:text-amber-300">
-								If you are the sole owner of any organization, that organization
-								and all its workspaces will be permanently deleted along with
-								your account.
-							</p>
-						</div>
-						<div className="space-y-2.5">
+
+					<div className="rounded-[var(--app-radius)] border border-amber-200 bg-amber-50 px-3 py-3 dark:border-amber-900/60 dark:bg-amber-950/20">
+						<p className="text-xs leading-5 text-amber-800 dark:text-amber-300">
+							If you are the sole owner of any organization, that organization
+							and all its workspaces will be permanently deleted along with your
+							account.
+						</p>
+					</div>
+
+					{/* 🔥 Equal spacing block */}
+					<div className="mt-5 space-y-5">
+						<div className="space-y-2">
 							<Label
 								htmlFor="delete-confirm-email"
-								className={formLabelClassName}
+								className="text-sm font-medium text-gray-700 dark:text-gray-300"
 							>
 								Type your email{" "}
 								<span className="font-mono text-xs text-gray-500">
@@ -374,6 +373,7 @@ export default function SettingsPage() {
 								</span>{" "}
 								to confirm
 							</Label>
+
 							<Input
 								id="delete-confirm-email"
 								type="email"
@@ -381,25 +381,22 @@ export default function SettingsPage() {
 								value={deleteConfirmEmail}
 								onChange={(e) => setDeleteConfirmEmail(e.target.value)}
 								onKeyDown={(e) => e.key === "Enter" && handleDeleteAccount()}
-								className={formFieldClassName}
+								className="h-9"
 							/>
 						</div>
 					</div>
-					<DialogFooter className={formDialogFooterClassName}>
+
+					<DialogFooter className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
 						<Button
-							variant="outline"
 							className={cn(formSecondaryButtonClassName, "w-full sm:w-auto")}
 							onClick={() => setShowDeleteDialog(false)}
 							disabled={isDeletingAccount}
 						>
 							Cancel
 						</Button>
+
 						<Button
-							variant="outline"
-							className={cn(
-								formPrimaryButtonClassName,
-								"w-full border-red-300 bg-red-600 hover:bg-red-700 dark:border-red-800 dark:bg-red-600 dark:text-white dark:hover:bg-red-500 sm:w-auto",
-							)}
+							className="w-full bg-red-600 text-white hover:bg-red-700 hover:text-white sm:w-auto"
 							onClick={handleDeleteAccount}
 							disabled={
 								isDeletingAccount ||
@@ -410,7 +407,7 @@ export default function SettingsPage() {
 							{isDeletingAccount ? (
 								<Loader2 className="h-4 w-4 animate-spin" />
 							) : (
-								"Permanently Delete Account"
+								"Permanently delete account"
 							)}
 						</Button>
 					</DialogFooter>

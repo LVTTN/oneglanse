@@ -84,7 +84,7 @@ export function PromptResponsesPreview({
 								}
 							}}
 							className={cn(
-								"group cursor-pointer rounded-[24px] border border-gray-100/80 bg-white px-5 py-5 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.16)] transition-[box-shadow,border-color] duration-200 ease-out hover:shadow-[0_20px_60px_-28px_rgba(15,23,42,0.18)] dark:border-gray-800 dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.5)] sm:px-6 sm:py-6",
+								"group cursor-pointer rounded-[var(--app-radius)] border border-gray-100/80 bg-white px-5 py-5 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.16)] transition-[box-shadow,border-color] duration-200 ease-out hover:shadow-[0_20px_60px_-28px_rgba(15,23,42,0.18)] dark:border-gray-800 dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.5)] sm:px-6 sm:py-6",
 								isExpanded &&
 									"border-gray-200 shadow-[0_24px_70px_-34px_rgba(15,23,42,0.22)] dark:border-gray-700",
 							)}
@@ -94,7 +94,7 @@ export function PromptResponsesPreview({
 									<img
 										src={getModelFavicon(row.modelProvider)}
 										alt={row.modelProvider}
-										className="h-9 w-9 rounded-[14px]"
+										className="h-9 w-9 rounded-[var(--app-radius)]"
 									/>
 									<div className="flex flex-col">
 										<span className="text-sm font-medium text-gray-950 dark:text-gray-50">
@@ -114,7 +114,7 @@ export function PromptResponsesPreview({
 							</div>
 
 							{row.isAnalysed && row.metrics ? (
-								<div className="mb-4 rounded-[20px] border border-gray-100/80 bg-white px-4 py-3 dark:border-gray-800 dark:bg-neutral-950">
+								<div className="mb-4 rounded-[var(--app-radius)] border border-gray-100/80 bg-white px-4 py-3 dark:border-gray-800 dark:bg-neutral-950">
 									<div className="flex flex-wrap items-center gap-x-5 gap-y-2.5">
 										<div className="flex items-center gap-1.5">
 											<span className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500">
@@ -185,7 +185,7 @@ export function PromptResponsesPreview({
 									e.stopPropagation();
 									toggleResponse(index);
 								}}
-								className="mt-4 inline-flex items-center rounded-[20px] px-0 py-0 text-xs font-medium text-gray-500 transition-colors hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+								className="mt-4 inline-flex items-center rounded-[var(--app-radius)] px-0 py-0 text-xs font-medium text-gray-500 transition-colors hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
 								type="button"
 							>
 								{isExpanded ? "Show less" : "View full response"}

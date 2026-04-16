@@ -5,6 +5,7 @@ import { CronExpressionParser } from "cron-parser";
 export type ImmediateRunResult =
 	| { status: "queued"; jobId: string }
 	| { status: "empty" }
+	| { status: "no-providers"; disconnectedProviders: string[] }
 	| { status: "failed"; error: string };
 
 export function parseCronExpressionOrThrow(cronExpression: string) {
@@ -32,6 +33,12 @@ export async function submitImmediateRunWithRetry(args: {
 		try {
 			const result = await submitAgentJobGroup({ workspaceId, userId });
 			if (result.status === "empty") return { status: "empty" };
+			if (result.status === "no-providers") {
+				return {
+					status: "no-providers",
+					disconnectedProviders: result.disconnectedProviders,
+				};
+			}
 			return { status: "queued", jobId: result.jobGroupId };
 		} catch (err) {
 			lastError = err;

@@ -1,6 +1,8 @@
+import { existsSync } from "node:fs";
 import {
 	getAuthModuleState,
 	getAuthProviderCards,
+	getAuthSessionFile,
 	getAuthStorageDiagnostics,
 	readProviderAuthStatuses,
 } from "@oneglanse/services";
@@ -54,6 +56,8 @@ export async function readProviderConnectionsState(): Promise<ProviderConnection
 		...getAuthModuleState(),
 		cards: cards.map((card) => ({
 			...card,
+			authFilePath: getAuthSessionFile(card.provider),
+			authFileExists: existsSync(getAuthSessionFile(card.provider)),
 			status:
 				statusMap.get(card.provider) ??
 				getDefaultProviderAuthStatus(card.provider),

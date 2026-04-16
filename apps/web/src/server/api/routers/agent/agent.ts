@@ -1,8 +1,8 @@
-import { cancelProviderRun, redis } from "@oneglanse/services";
+import { cancelProviderRun, redis, waitForRedis } from "@oneglanse/services";
 import { PROVIDER_LIST } from "@oneglanse/types";
 import { z } from "zod";
-import { validWorkspace } from "../../middleware/validWorkspace";
 import { createRateLimiter } from "../../middleware/rateLimit";
+import { validWorkspace } from "../../middleware/validWorkspace";
 import {
 	authorizedWorkspaceProcedure,
 	protectedProcedure,
@@ -31,6 +31,7 @@ export const agentRouter = createTRPCRouter({
 			}),
 		)
 		.query(async ({ input }) => {
+			await waitForRedis();
 			const result = await redis.get(`job:${input.jobId}:result`);
 
 			if (!result) {
