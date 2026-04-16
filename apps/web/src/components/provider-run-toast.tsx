@@ -18,6 +18,7 @@ type DisplayPhase = "running" | "completed" | "failed" | "stopped";
 
 const PROVIDER_RUN_TOAST_ID = "provider-run-progress";
 const COMPLETION_TOAST_DURATION_MS = 1400;
+const STOPPED_HANDOFF_DELAY_MS = 350;
 
 function ProviderRunToastCard({
 	provider,
@@ -88,7 +89,9 @@ function showProviderToast(args: {
 			duration:
 				args.phase === "running"
 					? Number.POSITIVE_INFINITY
-					: COMPLETION_TOAST_DURATION_MS,
+					: args.phase === "stopped"
+						? STOPPED_HANDOFF_DELAY_MS
+						: COMPLETION_TOAST_DURATION_MS,
 		},
 	);
 }
@@ -170,6 +173,7 @@ export function useProviderRunToast(args: {
 			if (completionTimerRef.current) {
 				clearTimeout(completionTimerRef.current);
 			}
+			const handoffDelay = nextPhase === "stopped" ? STOPPED_HANDOFF_DELAY_MS : COMPLETION_TOAST_DURATION_MS;
 			completionTimerRef.current = setTimeout(() => {
 				completionTimerRef.current = null;
 				const nextRunningProvider = PROVIDER_LIST.find(
@@ -193,7 +197,7 @@ export function useProviderRunToast(args: {
 
 				displayRef.current = null;
 				toast.dismiss(PROVIDER_RUN_TOAST_ID);
-			}, COMPLETION_TOAST_DURATION_MS);
+			}, handoffDelay);
 			return;
 		}
 

@@ -12,7 +12,7 @@ export const getModelFavicon = (model: string): string => {
 	const providerConfig =
 		PROVIDER_DISPLAY[normalizedModel as keyof typeof PROVIDER_DISPLAY];
 	if (providerConfig) {
-		return `https://www.google.com/s2/favicons?sz=32&domain=${providerConfig.domain}`;
+		return `https://www.google.com/s2/favicons?sz=64&domain=${providerConfig.domain}`;
 	}
 
 	// Fallback: display name aliases and other models
@@ -27,7 +27,7 @@ export const getModelFavicon = (model: string): string => {
 	};
 
 	const domain = fallbackDomains[normalizedModel] ?? `${normalizedModel}.com`;
-	return `https://www.google.com/s2/favicons?sz=32&domain=${domain}`;
+	return `https://www.google.com/s2/favicons?sz=64&domain=${domain}`;
 };
 
 export const getFaviconUrls = (domain?: string, name?: string): string[] => {

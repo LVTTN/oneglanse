@@ -1,7 +1,7 @@
 "use client";
 
 import { cn, getModelFavicon, getProviderDisplayName } from "@oneglanse/utils";
-import { CheckCircle2, Loader2, XCircle } from "lucide-react";
+import { CheckCircle2, Loader2, StopCircle, XCircle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "./button.js";
 
@@ -118,12 +118,15 @@ export function ProviderRunStatusCard(props: {
 							variant="outline"
 							onClick={() => void onStop?.()}
 							disabled={isStopping}
-							className="h-8 rounded-full px-3 text-xs"
+							className="h-8 rounded-full border-red-200 bg-red-50 px-2.5 text-red-600 hover:bg-red-100 hover:text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-950/50 dark:hover:text-red-300"
 						>
 							{isStopping ? (
 								<Loader2 className="h-3.5 w-3.5 animate-spin" />
 							) : (
-								"Stop"
+								<>
+									<StopCircle className="h-3.5 w-3.5" />
+									<span className="text-xs">Stop</span>
+								</>
 							)}
 						</Button>
 					) : phase === "running" ? (
