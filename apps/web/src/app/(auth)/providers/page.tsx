@@ -36,6 +36,7 @@ export default async function ProvidersPage({
 			nextHref={nextHref}
 			showSetupNotice={!isSelfHost}
 			isSelfHost={isSelfHost}
+			workspaceId={workspace?.id ?? null}
 		/>
 	);
 }

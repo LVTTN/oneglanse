@@ -11,8 +11,11 @@ import {
 	useResetAllProviders,
 } from "@/lib/provider-connections/client";
 import type { ProviderConnectionCard } from "@/lib/provider-connections/types";
+import { api } from "@/trpc/react";
 import { Button, toast } from "@oneglanse/ui";
 import { cn, getModelFavicon } from "@oneglanse/utils";
+import { AUTH_PROVIDER_LIST } from "@oneglanse/types";
+import type { AuthProvider } from "@oneglanse/types";
 import { CheckCircle2, Loader2, RotateCcw, RotateCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -114,6 +117,7 @@ export function ProviderConnectionsPanel(props: {
 	nextHref?: string | null;
 	showSetupNotice?: boolean;
 	isSelfHost?: boolean;
+	workspaceId?: string | null;
 }) {
 	const {
 		title = "Providers",
@@ -121,9 +125,54 @@ export function ProviderConnectionsPanel(props: {
 		nextHref = null,
 		showSetupNotice = true,
 		isSelfHost = false,
+		workspaceId = null,
 	} = props;
 	const router = useRouter();
 	const authProvidersQuery = useProviderConnections();
+
+	const enabledProvidersQuery = api.workspace.getEnabledProviders.useQuery(
+		{ workspaceId: workspaceId! },
+		{ enabled: !!workspaceId },
+	);
+	const setEnabledMutation = api.workspace.setEnabledProviders.useMutation({
+		onError: () => {
+			toast.error("Failed to update provider. Please try again.");
+		},
+		onSettled: () => {
+			void enabledProvidersQuery.refetch();
+		},
+	});
+
+	const isProviderEnabled = (provider: AuthProvider): boolean => {
+		if (setEnabledMutation.isPending && setEnabledMutation.variables) {
+			const pending = setEnabledMutation.variables.enabledProviders;
+			return pending === null || pending.includes(provider);
+		}
+		const server = enabledProvidersQuery.data?.enabledProviders ?? null;
+		return server === null || server.includes(provider);
+	};
+
+	const handleProviderToggle = (provider: AuthProvider) => {
+		if (!workspaceId) return;
+		const serverEnabled = enabledProvidersQuery.data?.enabledProviders ?? null;
+		const serverList =
+			serverEnabled === null ? ([...AUTH_PROVIDER_LIST] as AuthProvider[]) : serverEnabled;
+		const currentlyEnabled = serverEnabled === null || serverEnabled.includes(provider);
+
+		if (currentlyEnabled) {
+			const remaining = serverList.filter((p) => p !== provider);
+			if (remaining.length === 0) {
+				toast.error("At least one provider must be enabled.");
+				return;
+			}
+			setEnabledMutation.mutate({ workspaceId, enabledProviders: remaining });
+		} else {
+			const nextList = [...serverList, provider] as AuthProvider[];
+			const next = nextList.length === AUTH_PROVIDER_LIST.length ? null : nextList;
+			setEnabledMutation.mutate({ workspaceId, enabledProviders: next });
+		}
+	};
+
 	const providerActionMutation = useProviderConnectionAction({
 		onSuccess: (result, variables) => {
 			toast.success(
@@ -167,7 +216,7 @@ export function ProviderConnectionsPanel(props: {
 						</p>
 					) : null}
 
-					<div className="rounded-[calc(var(--app-radius)+0.1rem)] border border-gray-200/80 bg-white/50 p-3 dark:border-gray-800 dark:bg-white/[0.03]">
+					<div className="rounded-[calc(var(--app-radius)+0.1rem)] border border-gray-200/80 bg-white/50 p-4 sm:p-5 dark:border-gray-800 dark:bg-white/[0.03]">
 						<div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 							<div className="space-y-1">
 								<p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-400 dark:text-gray-500">
@@ -185,9 +234,10 @@ export function ProviderConnectionsPanel(props: {
 
 							<Button
 								variant="ghost"
+								size="icon"
 								className={cn(
 									formSecondaryButtonClassName,
-									"w-full gap-2 border border-gray-200/80 bg-white/85 text-gray-600 dark:border-gray-700 dark:bg-white/5 dark:text-gray-300 sm:w-auto",
+									"size-8 shrink-0 rounded-[var(--app-radius)] border border-gray-200/80 bg-white/85 p-0 text-gray-600 sm:size-8.5 dark:border-gray-700 dark:bg-white/5 dark:text-gray-300 lg:size-9 xl:size-10",
 								)}
 								onClick={() => resetAllMutation.mutate()}
 								disabled={
@@ -195,6 +245,7 @@ export function ProviderConnectionsPanel(props: {
 									resetAllMutation.isPending ||
 									isAnyConnectionPending
 								}
+								aria-label="Reset all provider sessions"
 								title="Reset all provider sessions"
 							>
 								{resetAllMutation.isPending ? (
@@ -202,7 +253,6 @@ export function ProviderConnectionsPanel(props: {
 								) : (
 									<RotateCcw className="h-3.5 w-3.5" />
 								)}
-								Reset all
 							</Button>
 						</div>
 
@@ -298,6 +348,8 @@ export function ProviderConnectionsPanel(props: {
 						? "Connecting"
 						: "Connect";
 
+					const isEnabled = isProviderEnabled(card.provider);
+
 					return (
 						<div
 							key={card.provider}
@@ -308,7 +360,12 @@ export function ProviderConnectionsPanel(props: {
 						>
 							<div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gray-300/70 to-transparent dark:via-white/10" />
 							<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-								<div className="min-w-0 flex-1">
+								<div
+									className={cn(
+										"min-w-0 flex-1 transition-opacity duration-200",
+										!isEnabled && workspaceId ? "opacity-40" : "opacity-100",
+									)}
+								>
 									<div className="flex items-center gap-3">
 										<img
 											src={getModelFavicon(primaryProvider)}
@@ -397,6 +454,36 @@ export function ProviderConnectionsPanel(props: {
 												<RotateCw className="h-4 w-4" />
 											)}
 										</Button>
+									) : null}
+
+									{workspaceId ? (
+										<div className="ml-0.5 flex items-center gap-2">
+											<button
+												type="button"
+												role="switch"
+												aria-checked={isEnabled}
+												onClick={() => handleProviderToggle(card.provider)}
+												disabled={setEnabledMutation.isPending}
+												title={
+													isEnabled
+														? `Disable ${cardTitle}`
+														: `Enable ${cardTitle}`
+												}
+												className={cn(
+													"relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus-visible:outline-none disabled:cursor-not-allowed",
+													isEnabled
+														? "bg-emerald-500 dark:bg-emerald-600"
+														: "bg-gray-200 dark:bg-gray-700",
+												)}
+											>
+												<span
+													className={cn(
+														"pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out",
+														isEnabled ? "translate-x-4" : "translate-x-0",
+													)}
+												/>
+											</button>
+										</div>
 									) : null}
 								</div>
 							</div>
