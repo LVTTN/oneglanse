@@ -7,14 +7,6 @@
 		"noEmit": false,
 		"isolatedModules": true,
 		"composite": true,
-		"baseUrl": "../../",
-		"paths": {
-			"@oneglanse/types": [
-				"packages/types/src/index.ts",
-				"packages/types/dist/index.d.ts"
-			]
-		},
-
 		/* Output */
 		"rootDir": "./src",
 		"outDir": "./dist",
@@ -22,6 +14,5 @@
 		"declarationMap": true
 	},
 	"include": ["src/**/*.ts"],
-	"exclude": ["node_modules", "dist"],
-	"references": [{ "path": "../types" }]
+	"exclude": ["node_modules", "dist"]
 }

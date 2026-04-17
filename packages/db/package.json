@@ -21,7 +21,6 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
-		"@oneglanse/types": "workspace:*",
 		"@clickhouse/client": "^1.12.1",
 		"drizzle-orm": "^0.41.0",
 		"pg": "^8.16.3",
