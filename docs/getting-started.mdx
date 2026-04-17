@@ -1,29 +1,23 @@
 ---
 title: Getting Started
-description: Use OneGlanse in the cloud app, run it locally, or self-host the full stack on your own VPS.
+description: Run OneGlanse locally or self-host it on your own VPS with full control over data and execution.
 ---
 
 # Getting Started
 
-| | Cloud | Local | Self-Host |
-|---|---|---|---|
-| Fastest setup | ✓ | | |
-| Interactive provider auth | | ✓ | |
-| Manual prompt runs | | ✓ | |
-| Recurring scheduling | ✓ | | ✓ |
-| Full data ownership | | ✓ | ✓ |
-
----
-
-## Cloud App
-
-Sign in at [app.oneglanse.com](https://app.oneglanse.com), create a workspace, add prompts, and review results. No setup required.
+| | Local | Self-Host |
+|---|---|---|
+| Fast setup | ✓ | |
+| Interactive provider auth | ✓ | |
+| Manual prompt runs | ✓ | |
+| Recurring scheduling | | ✓ |
+| Full data ownership | ✓ | ✓ |
 
 ---
 
 ## Local
 
-Use local mode to run the full stack on your own machine — interactive provider auth, manual prompt runs, all data stored locally.
+Run the full stack on your machine — fastest way to get started with interactive auth and manual runs.
 
 **Requirements:** Node.js 20+, pnpm 10+, Docker
 
@@ -34,36 +28,42 @@ pnpm install
 cp .env.example .env
 ```
 
-Open `.env` and set your LLM API key — this is the only value you must provide:
+Set your LLM key in `.env` (only required value):
 
 ```bash
 # Pick one:
 OPENAI_API_KEY=sk-...
 
-# or to use Claude:
+# or:
 ANTHROPIC_API_KEY=sk-ant-...
 ANALYSIS_LLM_PROVIDER=claude
 ```
 
-Then start:
+Start the app:
 
 ```bash
 pnpm local
 ```
 
-Opens at `http://localhost:3000`. On first run: starts Postgres, ClickHouse, and Redis, runs migrations, and bootstraps the browser runtime. Sign up with email — Google OAuth is optional.
+Runs at http://localhost:3000
 
-Go to `/providers` to connect your AI accounts, then add prompts and run.
+On first run, OneGlanse:
+- Starts Postgres, ClickHouse, and Redis
+- Runs migrations
+- Bootstraps the browser runtime
+
+Then:
+1. Sign up with email (Google OAuth is enabled only if client ID and secret are configured)
+2. Connect your AI provider accounts (you’ll be redirected automatically)
+3. Add prompts and run
 
 ---
 
 ## Self-Host
 
-Self-host mode runs the full stack on a VPS with recurring scheduled runs. Provider auth is captured locally and transferred to the VPS — the server itself never opens a browser window.
+Deploy OneGlanse on your own VPS for scheduled runs and continuous tracking.
 
-### Step 1 — Deploy to VPS
-
-On your VPS, clone the repo and start the stack:
+### 1. Deploy
 
 ```bash
 git clone https://github.com/aryamantodkar/oneglanse
@@ -72,101 +72,83 @@ pnpm install
 cp .env.example .env
 ```
 
-Open `.env` and fill in:
+Update `.env`:
 
 ```bash
-# Required: LLM key for response analysis
-OPENAI_API_KEY=sk-...          # or ANTHROPIC_API_KEY + ANALYSIS_LLM_PROVIDER=claude
+# Required: analysis LLM
+OPENAI_API_KEY=sk-...
+# or ANTHROPIC_API_KEY + ANALYSIS_LLM_PROVIDER=claude
 
-# Required: residential proxy (see below)
+# Required: residential proxy
 THORDATA_PROXY_API_URL=https://your-thordata-endpoint
 
-# Required: token used to authenticate auth session uploads from your local machine
+# Required: auth upload token
 AGENT_AUTH_UPLOAD_TOKEN=your-secret-token
 
-# Optional: public URL of your VPS app
+# Optional
 APP_URL=https://your-domain.com
 API_BASE_URL=https://your-domain.com
 ```
 
-### Residential Proxy Requirement
+Start:
 
-Self-hosted runs must use a residential proxy. Add the ThorData endpoint to your VPS `.env`:
+```bash
+pnpm self-host
+```
+
+Persistent data is stored at /opt/oneglanse/storage
+
+---
+
+### 2. Residential proxy
+
+VPS environments are blocked by AI providers — a residential proxy is required.
+
+OneGlanse integrates with ThorData:
 
 ```bash
 THORDATA_PROXY_API_URL=https://your-thordata-api-endpoint
 PROXY_SCHEME=http
 ```
 
-Before each browser launch, OneGlanse requests fresh residential proxy candidates from ThorData and routes the browser through one of them. Direct VPS connections are not allowed.
+Before each run:
+- OneGlanse fetches fresh proxy candidates
+- Routes browser traffic through one
+- Releases it after completion
 
-### Docker Image Overrides
+---
 
-```bash
-pnpm self-host
-```
+### 3. Provider auth (local → VPS)
 
-This starts the app stack and the public Nginx gateway. Default ports:
+Auth must be captured locally and uploaded — it cannot run on a headless server.
 
-- App: `3001`
-- Auth upload API: `3333`
-
-Persistent state is stored at `/opt/oneglanse/storage`. Override with `ONEGLANSE_STORAGE_ROOT`.
-
-### Step 2 — Set up a residential proxy
-
-AI providers block datacenter IP addresses. On VPS you must route browser traffic through a residential proxy so requests appear to come from a real user location.
-
-OneGlanse uses **[ThorData](https://thordata.com)** residential proxies. Sign up for a ThorData account and get your rotating proxy API endpoint URL.
-
-Add it to your VPS `.env`:
-
-```bash
-THORDATA_PROXY_API_URL=https://your-thordata-api-endpoint
-```
-
-Before each browser launch, OneGlanse calls this URL, receives a list of available residential proxies, picks one, and routes all browser traffic through it. The proxy is released after the run completes.
-
-### Step 3 — Connect provider accounts
-
-Provider auth requires an interactive browser window — it cannot run on a headless server. You capture sessions on your **local machine** and upload them to the VPS.
-
-**On your local machine**, add these to your local `.env`:
+On your local machine:
 
 ```bash
 ONEGLANSE_VPS_IP=your-vps-ip
-AGENT_AUTH_UPLOAD_TOKEN=your-secret-token   # must match the VPS value
+AGENT_AUTH_UPLOAD_TOKEN=your-secret-token
 ```
 
-If you already have local sessions saved, upload them:
-
-```bash
-pnpm upload:vps
-```
-
-If you need to capture sessions first:
+Then:
 
 ```bash
 pnpm auth
+pnpm upload:vps
 ```
 
-This opens the local `/providers` page. Connect each provider interactively, then run `pnpm upload:vps` to transfer the sessions to your VPS.
+Repeat when sessions expire.
 
-Re-run this whenever a provider session expires.
+---
 
-### Step 4 — Verify
+### 4. Run
 
-Check that the agent on the VPS is receiving the sessions:
+Open your deployed app, add prompts, and enable scheduling.
 
-```bash
-curl http://YOUR_VPS_IP:3333/health
-```
-
-Then go to your app URL, add prompts, and start a scheduled run.
+---
 
 ### Updates
 
 ```bash
-pnpm self-host:app      # Pull and restart app stack only
-pnpm self-host:public   # Pull and restart public gateway only
+pnpm self-host:app
+pnpm self-host:public
 ```
