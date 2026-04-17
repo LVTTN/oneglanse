@@ -1,4 +1,3 @@
-import { AUTH_PROVIDER_LIST } from "@oneglanse/types";
 import { sql } from "drizzle-orm";
 import {
 	index,
@@ -15,7 +14,7 @@ import { user } from "./auth.js";
 
 export const workspaceEnabledProviderEnum = pgEnum(
 	"workspace_enabled_provider",
-	AUTH_PROVIDER_LIST,
+	["chatgpt", "perplexity", "gemini", "google", "claude"],
 );
 
 export const workspaces = pgTable("workspaces", {
