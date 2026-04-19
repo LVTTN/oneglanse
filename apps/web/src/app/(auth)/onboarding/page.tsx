@@ -11,8 +11,11 @@ import {
 	handleAgentRunResult,
 	persistActiveProviderRun,
 } from "@/components/provider-run-toast";
+import { env } from "@/env";
 import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
+import { useProviderConnections } from "@/lib/provider-connections/client";
 import { api } from "@/trpc/react";
+import { resolveAppMode } from "@oneglanse/types";
 import {
 	Button,
 	Card,
@@ -57,6 +60,7 @@ export default function FirstWorkspaceOnboardingPage() {
 	const router = useRouter();
 	const searchParams = useSafeSearchParams();
 	const workspaceId = searchParams.get("workspace") ?? "";
+	const appMode = resolveAppMode(env.NEXT_PUBLIC_ONEGLANSE_APP_MODE);
 
 	const [prompts, setPrompts] = useState<string[]>([]);
 	const [inputValue, setInputValue] = useState("");
@@ -81,6 +85,7 @@ export default function FirstWorkspaceOnboardingPage() {
 		{ workspaceId },
 		{ enabled: !!workspaceId },
 	);
+	const providerConnectionsQuery = useProviderConnections();
 	const storePrompts = api.prompt.store.useMutation();
 	const runAgent = api.agent.run.useMutation();
 
@@ -107,6 +112,12 @@ export default function FirstWorkspaceOnboardingPage() {
 			),
 		[suggestedPrompts, prompts],
 	);
+	const hasProviderAuth =
+		providerConnectionsQuery.data?.cards.some(
+			(card) => card.status.connected,
+		) ?? false;
+	const isLoadingProviderConnections =
+		providerConnectionsQuery.isLoading && !providerConnectionsQuery.data;
 
 	const addPrompt = (
 		value: string,
@@ -164,6 +175,11 @@ export default function FirstWorkspaceOnboardingPage() {
 		setIsStartingRun(true);
 		try {
 			await storePrompts.mutateAsync({ workspaceId, prompts });
+			if (!hasProviderAuth) {
+				toast.success("Prompts saved.");
+				router.replace(`/dashboard?workspace=${workspaceId}`);
+				return;
+			}
 			const run = await runAgent.mutateAsync({ workspaceId });
 			if (
 				!handleAgentRunResult(run, {
@@ -465,9 +481,20 @@ export default function FirstWorkspaceOnboardingPage() {
 
 						{/* Actions */}
 						<div className="flex flex-col gap-2 xl:gap-2.5">
+							{!hasProviderAuth && !isLoadingProviderConnections ? (
+								<p className="text-[11px] leading-4.5 text-gray-500 dark:text-gray-400">
+									{appMode === "local"
+										? "Please connect providers before running prompts. You can save this setup for now."
+										: "Please connect providers locally with `pnpm auth` and upload the saved auth to this VPS before running prompts. You can save this setup for now."}
+								</p>
+							) : null}
 							<Button
 								onClick={handleStart}
-								disabled={prompts.length === 0 || isPending}
+								disabled={
+									prompts.length === 0 ||
+									isPending ||
+									isLoadingProviderConnections
+								}
 								className={cn(
 									formPrimaryButtonClassName,
 									"min-w-[9rem] sm:min-w-[10rem] xl:min-w-[11rem]",
@@ -475,8 +502,10 @@ export default function FirstWorkspaceOnboardingPage() {
 							>
 								{isPending ? (
 									<Loader2 className="h-4 w-4 animate-spin" />
-								) : (
+								) : hasProviderAuth ? (
 									"Save & Run Prompts"
+								) : (
+									"Save"
 								)}
 							</Button>
 							<Button

@@ -6,6 +6,8 @@ OneGlanse monitors how your brand appears inside real AI products — ChatGPT, G
 
 **It doesn't call the model API.** It opens the actual ChatGPT, Gemini, Perplexity, Claude, and AI Overview interfaces in a real browser — the same way a user would — and captures exactly what gets rendered: the full response, inline citations, recommended sources, and how your brand is positioned relative to competitors. API responses omit all of this. OneGlanse captures what users actually see.
 
+**That is the core differentiator.** OneGlanse is built for GEO measurement against production chat surfaces, not benchmark-style API output. The answer visible in ChatGPT, Gemini, Perplexity, Claude, or Google AI Overview is often not the same as the raw API completion for the same prompt. The UI layer can add or suppress citations, reorder recommendations, inject product-specific formatting, and change how competitors and sources are presented. If you care about what users actually see, you need the UI response, not just the API response. The same distinction is discussed in Surfer's write-up on [LLM scraped AI answers vs API results](https://surferseo.com/blog/llm-scraped-ai-answers-vs-api-results/).
+
 **After capturing responses, OneGlanse uses OpenAI or Anthropic to analyze them.** Once a prompt run completes, the captured responses are sent to the LLM of your choice (OpenAI GPT or Claude) using your own API key. The LLM extracts GEO scores, sentiment, visibility, rank position, competitor mentions, citation sources, and the AI perception breakdown you see in the dashboard. You bring your own key — the call goes directly from your machine to OpenAI or Anthropic. Nothing passes through any third-party server.
 
 **Your data stays on your machine.** Responses, analytics, and auth sessions are stored in a PostgreSQL and ClickHouse instance you own and control — running locally via Docker or on your own VPS. No data is ever sent to an external server.
@@ -51,6 +53,64 @@ OneGlanse monitors how your brand appears inside real AI products — ChatGPT, G
 - **Your own LLM key** — response analysis uses your OpenAI or Anthropic key, called directly from your infrastructure
 - **ClickHouse analytics** — high-volume time-series storage built for prompt tracking at scale
 - **Self-hosted, free forever** — full stack deploys to any VPS with a single command
+
+---
+
+## Why UI-First Instead Of APIs
+
+Most GEO tooling talks about "tracking ChatGPT" or "tracking Gemini" while actually querying model APIs. That is not the same thing.
+
+OneGlanse uses the real chat UIs because those interfaces are where end users see:
+
+- inline citations and source cards
+- recommendation ordering
+- brand comparisons and product framing
+- provider-specific formatting and UI-level post-processing
+
+Those layers are critical to GEO analysis and are exactly the layers that often differ from API output. OneGlanse captures the rendered answer first, then runs analysis on top of that captured UI response.
+
+---
+
+## Why Camoufox Instead Of Chrome
+
+OneGlanse uses [Camoufox](https://github.com/daijro/camoufox), an anti-fingerprint Firefox-based browser, for provider sessions.
+
+That is a deliberate product decision, not an implementation accident.
+
+AI chat products aggressively defend their web apps against scripted access. In practice, stock Chrome / Chromium automation and generic Playwright browser profiles are much more likely to hit one or more of these failure modes:
+
+- sign-in loops
+- forced verification or bot checks
+- repeated session invalidation
+- blank or degraded responses
+- UI flows that work manually but fail under automation
+
+The main issue is not just "browser compatibility". It is the combination of:
+
+- automation fingerprints
+- browser fingerprint consistency
+- session reputation
+- IP reputation
+
+Camoufox gives OneGlanse a browser runtime that is materially better suited for authenticated UI collection against anti-bot-protected chat products. It reduces fingerprint mismatch and makes provider sessions more stable than standard Chrome-style automation in this use case.
+
+Credit to the Camoufox project for making that possible. OneGlanse builds on their work rather than pretending this is solved by plain Playwright + Chrome alone.
+
+---
+
+## Why Proxies Are Required On VPS
+
+Local runs are usually fine without a proxy because requests come from a normal residential or office IP.
+
+VPS environments are different. Most VPS providers expose datacenter IP ranges, and those ranges are commonly flagged, rate-limited, challenged, or blocked by AI chat products. Even if login works once, ongoing UI automation from a datacenter IP is much less reliable.
+
+That is why self-hosted VPS runs require a residential proxy:
+
+- the VPS still runs the worker and schedule
+- browser traffic exits through a residential IP
+- provider sites see a normal-looking client origin instead of a datacenter address
+
+Without that proxy layer, provider access from a VPS is often unstable or blocked outright.
 
 ---
 

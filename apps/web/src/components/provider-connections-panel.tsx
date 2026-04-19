@@ -1,6 +1,9 @@
 "use client";
 
 import {
+	formDialogContentClassName,
+	formDialogFooterClassName,
+	formDialogHeaderClassName,
 	formPanelClassName,
 	formPrimaryButtonClassName,
 	formSecondaryButtonClassName,
@@ -10,12 +13,22 @@ import {
 	useProviderConnections,
 	useResetAllProviders,
 } from "@/lib/provider-connections/client";
+import { writeSkipProviderGate } from "@/lib/provider-connections/provider-gate";
 import type { ProviderConnectionCard } from "@/lib/provider-connections/types";
 import { api } from "@/trpc/react";
-import { Button, toast } from "@oneglanse/ui";
-import { cn, getModelFavicon } from "@oneglanse/utils";
 import { AUTH_PROVIDER_LIST } from "@oneglanse/types";
 import type { AuthProvider } from "@oneglanse/types";
+import {
+	Button,
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+	toast,
+} from "@oneglanse/ui";
+import { cn, getModelFavicon } from "@oneglanse/utils";
 import { CheckCircle2, Loader2, RotateCcw, RotateCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -77,10 +90,10 @@ function getConnectionStatusMessage(
 
 function getConnectionCardClasses(card: ProviderConnectionCard): string {
 	if (card.status.connecting) {
-		return `${formPanelClassName} bg-stone-50 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] dark:bg-neutral-900 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)]`;
+		return `${formPanelClassName} border-gray-200/40 bg-stone-50 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] dark:border-white/5 dark:bg-neutral-900 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)]`;
 	}
 
-	return `${formPanelClassName} bg-white shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)]`;
+	return `${formPanelClassName} border-gray-200/40 bg-white shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] dark:border-white/5 dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)]`;
 }
 
 function getConnectionBadgeClasses(card: ProviderConnectionCard): string {
@@ -113,7 +126,6 @@ export function ProviderConnectionsPanel(props: {
 	description?: string | null;
 	nextHref?: string | null;
 	showSetupNotice?: boolean;
-	isSelfHost?: boolean;
 	workspaceId?: string | null;
 }) {
 	const {
@@ -121,19 +133,22 @@ export function ProviderConnectionsPanel(props: {
 		description = "Log in to a provider, then close the browser window. Auth is saved automatically.",
 		nextHref = null,
 		showSetupNotice = true,
-		isSelfHost = false,
 		workspaceId = null,
 	} = props;
 	const router = useRouter();
 	const authProvidersQuery = useProviderConnections();
+	const resolvedWorkspaceId = workspaceId ?? "";
 
 	const enabledProvidersQuery = api.workspace.getEnabledProviders.useQuery(
-		{ workspaceId: workspaceId! },
+		{ workspaceId: resolvedWorkspaceId },
 		{ enabled: !!workspaceId },
 	);
 
 	// Local state for instant toggle feedback — synced from server on first load
-	const [localEnabled, setLocalEnabled] = useState<AuthProvider[] | null | undefined>(undefined);
+	const [localEnabled, setLocalEnabled] = useState<
+		AuthProvider[] | null | undefined
+	>(undefined);
+	const [showSkipDialog, setShowSkipDialog] = useState(false);
 	const toggleDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	useEffect(() => {
@@ -144,12 +159,22 @@ export function ProviderConnectionsPanel(props: {
 		) {
 			setLocalEnabled(enabledProvidersQuery.data.enabledProviders ?? null);
 		}
-	}, [enabledProvidersQuery.data, enabledProvidersQuery.isFetching, localEnabled]);
+	}, [
+		enabledProvidersQuery.data,
+		enabledProvidersQuery.isFetching,
+		localEnabled,
+	]);
 
 	const utils = api.useUtils();
 	const setEnabledMutation = api.workspace.setEnabledProviders.useMutation({
 		onSuccess: () => {
-			void utils.workspace.getEnabledProviders.invalidate({ workspaceId: workspaceId! });
+			if (!workspaceId) {
+				return;
+			}
+
+			void utils.workspace.getEnabledProviders.invalidate({
+				workspaceId,
+			});
 		},
 		onError: () => {
 			// Revert to server state on error
@@ -159,15 +184,25 @@ export function ProviderConnectionsPanel(props: {
 	});
 
 	const isProviderEnabled = (provider: AuthProvider): boolean => {
-		const state = localEnabled !== undefined ? localEnabled : (enabledProvidersQuery.data?.enabledProviders ?? null);
+		const state =
+			localEnabled !== undefined
+				? localEnabled
+				: (enabledProvidersQuery.data?.enabledProviders ?? null);
 		return state === null || state.includes(provider);
 	};
 
 	const handleProviderToggle = (provider: AuthProvider) => {
 		if (!workspaceId) return;
-		const currentState = localEnabled !== undefined ? localEnabled : (enabledProvidersQuery.data?.enabledProviders ?? null);
-		const currentList = currentState === null ? ([...AUTH_PROVIDER_LIST] as AuthProvider[]) : currentState;
-		const currentlyEnabled = currentState === null || currentState.includes(provider);
+		const currentState =
+			localEnabled !== undefined
+				? localEnabled
+				: (enabledProvidersQuery.data?.enabledProviders ?? null);
+		const currentList =
+			currentState === null
+				? ([...AUTH_PROVIDER_LIST] as AuthProvider[])
+				: currentState;
+		const currentlyEnabled =
+			currentState === null || currentState.includes(provider);
 
 		let next: AuthProvider[] | null;
 		if (currentlyEnabled) {
@@ -214,101 +249,53 @@ export function ProviderConnectionsPanel(props: {
 		providerActionMutation.isPending ||
 		cards.some((card) => card.status.connecting);
 
+	const handleSkipForNow = () => {
+		if (!nextHref) {
+			return;
+		}
+
+		writeSkipProviderGate(true);
+		setShowSkipDialog(false);
+		router.push(nextHref);
+	};
+
 	return (
 		<section>
 			<div className="mb-6 space-y-2">
 				<div className="space-y-2">
-					{title ? (
-						<h2 className="text-[1.45rem] font-semibold leading-tight tracking-[-0.03em] text-gray-950 sm:text-[1.8rem] dark:text-gray-50">
-							{title}
-						</h2>
-					) : null}
+					<div className="flex flex-wrap items-center gap-3">
+						{title ? (
+							<h2 className="text-[1.45rem] font-semibold leading-tight tracking-[-0.03em] text-gray-950 sm:text-[1.8rem] dark:text-gray-50">
+								{title}
+							</h2>
+						) : null}
+						<Button
+							variant="ghost"
+							className={cn(
+								formSecondaryButtonClassName,
+								"h-10 shrink-0 border border-red-200 bg-red-50 text-red-700 shadow-none hover:bg-red-100 hover:text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200 dark:hover:bg-red-950/60 dark:hover:text-red-100",
+							)}
+							onClick={() => resetAllMutation.mutate()}
+							disabled={
+								!hasAtLeastOneConnection ||
+								resetAllMutation.isPending ||
+								isAnyConnectionPending
+							}
+							title="Reset all provider sessions"
+						>
+							{resetAllMutation.isPending ? (
+								<Loader2 className="h-3.5 w-3.5 animate-spin" />
+							) : (
+								<RotateCcw className="h-3.5 w-3.5" />
+							)}
+							Reset all
+						</Button>
+					</div>
 					{description ? (
 						<p className="text-sm leading-6 text-gray-500 dark:text-gray-400">
 							{description}
 						</p>
 					) : null}
-
-					<div className="rounded-[calc(var(--app-radius)+0.1rem)] border border-gray-200/80 bg-white/50 p-4 sm:p-5 dark:border-gray-800 dark:bg-white/[0.03]">
-						<div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-							<div className="space-y-1">
-								<p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-400 dark:text-gray-500">
-									Setup Flow
-								</p>
-								<p className="text-sm font-medium tracking-[-0.02em] text-gray-900 dark:text-gray-100">
-									How provider access works
-								</p>
-								<p className="text-xs leading-5 text-gray-500 dark:text-gray-400">
-									{isSelfHost
-										? "Connect locally, upload the saved auth session, then use it from the VPS."
-										: "Connect once on this machine, then use only the providers you keep active."}
-								</p>
-							</div>
-
-							<Button
-								variant="ghost"
-								className={cn(
-									formSecondaryButtonClassName,
-									"gap-1.5 border border-gray-200/80 bg-white/85 text-gray-600 dark:border-gray-700 dark:bg-white/5 dark:text-gray-300",
-								)}
-								onClick={() => resetAllMutation.mutate()}
-								disabled={
-									!hasAtLeastOneConnection ||
-									resetAllMutation.isPending ||
-									isAnyConnectionPending
-								}
-								title="Reset all provider sessions"
-							>
-								{resetAllMutation.isPending ? (
-									<Loader2 className="h-3.5 w-3.5 animate-spin" />
-								) : (
-									<RotateCcw className="h-3.5 w-3.5" />
-								)}
-								Reset all
-							</Button>
-						</div>
-
-						<div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-							<div className="rounded-[var(--app-radius)] border border-gray-200/80 bg-white/80 px-3 py-3 dark:border-gray-800 dark:bg-white/5">
-								<p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-400 dark:text-gray-500">
-									1. Connect
-								</p>
-								<p className="mt-1 text-xs leading-5 text-gray-600 dark:text-gray-300">
-									{isSelfHost
-										? "Connect to the providers."
-										: "Open a provider and finish sign-in in the browser window."}
-								</p>
-							</div>
-							<div className="rounded-[var(--app-radius)] border border-gray-200/80 bg-white/80 px-3 py-3 dark:border-gray-800 dark:bg-white/5">
-								<p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-400 dark:text-gray-500">
-									2. Save
-								</p>
-								<p className="mt-1 text-xs leading-5 text-gray-600 dark:text-gray-300">
-									Close the window; the session is stored automatically.
-								</p>
-							</div>
-							<div className="rounded-[var(--app-radius)] border border-gray-200/80 bg-white/80 px-3 py-3 dark:border-gray-800 dark:bg-white/5">
-								<p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-400 dark:text-gray-500">
-									{isSelfHost ? "3. Upload" : "3. Run"}
-								</p>
-								<p className="mt-1 text-xs leading-5 text-gray-600 dark:text-gray-300">
-									{isSelfHost
-										? "Run `pnpm upload vps` so the auth session is transferred to the VPS."
-										: "Connect the providers you want available for prompt runs on this machine."}
-								</p>
-							</div>
-							{isSelfHost ? (
-								<div className="rounded-[var(--app-radius)] border border-gray-200/80 bg-white/80 px-3 py-3 dark:border-gray-800 dark:bg-white/5 sm:col-span-3">
-									<p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-400 dark:text-gray-500">
-										4. Run on VPS
-									</p>
-									<p className="mt-1 text-xs leading-5 text-gray-600 dark:text-gray-300">
-										You can use it on the VPS to run prompts.
-									</p>
-								</div>
-							) : null}
-						</div>
-					</div>
 				</div>
 			</div>
 
@@ -400,7 +387,7 @@ export function ProviderConnectionsPanel(props: {
 												</div>
 											) : null}
 											{statusMessage ? (
-												<p className="mt-1.5 text-sm leading-5 text-red-500 dark:text-red-300">
+												<p className="mt-1 text-[11px] leading-4.5 text-gray-500 dark:text-gray-400">
 													{statusMessage}
 												</p>
 											) : null}
@@ -500,18 +487,62 @@ export function ProviderConnectionsPanel(props: {
 				})}
 			</div>
 
-			{nextHref && hasAtLeastOneConnection ? (
-				<div className="mt-6 flex justify-end">
+			{nextHref ? (
+				<div className="mt-6 flex items-center justify-between gap-3">
 					<Button
-						variant="default"
-						className={cn(formPrimaryButtonClassName, "h-11 w-auto px-5")}
-						onClick={() => router.push(nextHref)}
+						variant="ghost"
+						onClick={() => setShowSkipDialog(true)}
 						disabled={isAnyConnectionPending}
+						className={cn(
+							formSecondaryButtonClassName,
+							"h-10 border border-gray-200/80 bg-white px-3.5 text-[11px] text-gray-600 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_18px_-14px_rgba(15,23,42,0.12)] hover:bg-stone-50 hover:text-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-300 dark:hover:bg-gray-900 dark:hover:text-gray-100",
+						)}
 					>
-						Next
+						Skip for now
 					</Button>
+					{hasAtLeastOneConnection ? (
+						<Button
+							variant="default"
+							className={cn(formPrimaryButtonClassName, "h-11 w-auto px-5")}
+							onClick={() => router.push(nextHref)}
+							disabled={isAnyConnectionPending}
+						>
+							Next
+						</Button>
+					) : (
+						<div />
+					)}
 				</div>
 			) : null}
+
+			<Dialog open={showSkipDialog} onOpenChange={setShowSkipDialog}>
+				<DialogContent className={formDialogContentClassName}>
+					<DialogHeader className={formDialogHeaderClassName}>
+						<DialogTitle className="text-lg font-semibold tracking-[-0.01em] text-gray-950 dark:text-gray-50">
+							Continue without providers?
+						</DialogTitle>
+						<DialogDescription className="text-sm leading-6 text-gray-500 dark:text-gray-400">
+							You can keep setting up your workspace, but prompt runs will not
+							work until at least one provider is connected.
+						</DialogDescription>
+					</DialogHeader>
+					<DialogFooter className={formDialogFooterClassName}>
+						<Button
+							variant="ghost"
+							onClick={() => setShowSkipDialog(false)}
+							className={formSecondaryButtonClassName}
+						>
+							No
+						</Button>
+						<Button
+							onClick={handleSkipForNow}
+							className={formPrimaryButtonClassName}
+						>
+							Yes, continue anyway
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</section>
 	);
 }

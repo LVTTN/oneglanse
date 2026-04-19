@@ -11,6 +11,12 @@ This guide deploys OneGlanse on a fresh Ubuntu 22.04 / 24.04 VPS. At the end you
 - Postgres, ClickHouse, and Redis running in Docker
 - Provider sessions uploaded from your local machine
 
+Important context before you start:
+
+- OneGlanse collects responses from real provider UIs, not official model APIs
+- provider auth is captured locally with `pnpm auth`
+- VPS browser traffic needs a residential proxy because datacenter IPs are often blocked by provider websites
+
 ---
 
 ## 1. Provision the VPS
@@ -91,6 +97,14 @@ AGENT_AUTH_UPLOAD_TOKEN=replace-with-a-strong-secret
 ```
 
 The scripts auto-generate `BETTER_AUTH_SECRET` and `INTERNAL_CRON_SECRET` on first run.
+
+Why the proxy is mandatory on VPS:
+
+- VPS traffic usually originates from datacenter IP ranges
+- provider websites frequently challenge or block those IPs
+- OneGlanse collects from authenticated web UIs, so network reputation matters
+
+The proxy is what makes VPS-based scheduling viable. Without it, direct provider access from the VPS is often unreliable.
 
 ---
 
@@ -179,6 +193,8 @@ sudo certbot renew --dry-run
 ## 7. Upload provider auth sessions
 
 Provider auth must be captured on your **local machine** (it needs a real browser). Once captured, upload the sessions to the VPS.
+
+OneGlanse uses [Camoufox](https://github.com/daijro/camoufox), an anti-fingerprint Firefox-based browser, for this flow. That is intentional: plain Chrome / Chromium automation is more likely to trigger login loops, verification challenges, or unstable sessions on provider websites. Camoufox is a better fit for authenticated scraping against anti-bot-protected chat interfaces.
 
 **On your local machine** — set these in your local `.env`:
 

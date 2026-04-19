@@ -3,11 +3,16 @@
 
 import { AppSidebar } from "@/components/app-sidebar";
 import { formToolbarButtonClassName } from "@/components/forms/auth-form-chrome";
-import { ProviderConnectionsPanel } from "@/components/provider-connections-panel";
 import { ProviderRunToastManager } from "@/components/provider-run-toast";
+import { ProvidersScreen } from "@/components/providers-screen";
 import { signOutAndRedirect } from "@/lib/auth/logout";
+import { getPostProvidersContinuePath } from "@/lib/auth/redirect";
 import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
 import { useProviderConnections } from "@/lib/provider-connections/client";
+import {
+	readSkipProviderGate,
+	writeSkipProviderGate,
+} from "@/lib/provider-connections/provider-gate";
 import type { ProviderConnectionsState } from "@/lib/provider-connections/types";
 import { api } from "@/trpc/react";
 import type { Workspace } from "@oneglanse/db";
@@ -154,6 +159,7 @@ export default function LayoutContent({
 	const pathname = usePathname();
 	const searchParams = useSafeSearchParams();
 	const isOnboardingFlow = pathname?.startsWith("/onboarding");
+	const [hasSkippedProviderGate, setHasSkippedProviderGate] = useState(false);
 
 	const workspaceIdFromUrl = searchParams.get("workspace") ?? "";
 
@@ -173,7 +179,8 @@ export default function LayoutContent({
 	const hasAtLeastOneConnection =
 		authProvidersQuery.data?.cards.some((card) => card.status.connected) ??
 		false;
-	const shouldShowConnectionGate = !hasAtLeastOneConnection;
+	const shouldShowConnectionGate =
+		!hasAtLeastOneConnection && !hasSkippedProviderGate;
 	const canLaunchProvidersLocally = isInteractiveAuthAllowedInMode(appMode);
 	const isProvidersPage = pathname === "/providers";
 	const isWorkspaceSetupPage = pathname?.startsWith("/workspace") ?? false;
@@ -181,13 +188,47 @@ export default function LayoutContent({
 	const pageHeader = getPageHeader(pathname);
 	const providersWorkspaceId =
 		workspaceIdFromUrl || resolvedWorkspace?.id || "";
-	const providersHref = providersWorkspaceId
-		? `/providers?workspace=${providersWorkspaceId}`
+	const rawNext = searchParams.get("next");
+	const currentSearch = searchParams.toString();
+	const currentPathWithQuery = pathname
+		? `${pathname}${currentSearch ? `?${currentSearch}` : ""}`
+		: "/workspace";
+	const providerGateNext =
+		rawNext ?? (isProvidersPage ? null : currentPathWithQuery);
+	const providersParams = new URLSearchParams();
+	if (providersWorkspaceId) {
+		providersParams.set("workspace", providersWorkspaceId);
+	}
+	if (providerGateNext && canLaunchProvidersLocally) {
+		providersParams.set("next", providerGateNext);
+	}
+	const providersHref = providersParams.size
+		? `/providers?${providersParams.toString()}`
 		: "/providers";
+	const providersNextHref =
+		canLaunchProvidersLocally && providerGateNext
+			? getPostProvidersContinuePath({
+					rawNext: providerGateNext,
+					workspaceId: providersWorkspaceId || null,
+				})
+			: null;
 	const workspaceHref = providersWorkspaceId
 		? `/workspace?workspace=${providersWorkspaceId}`
 		: "/workspace";
 	const runToastManager = <ProviderRunToastManager />;
+
+	useEffect(() => {
+		setHasSkippedProviderGate(readSkipProviderGate());
+	}, []);
+
+	useEffect(() => {
+		if (!hasAtLeastOneConnection) {
+			return;
+		}
+
+		writeSkipProviderGate(false);
+		setHasSkippedProviderGate(false);
+	}, [hasAtLeastOneConnection]);
 
 	useEffect(() => {
 		if (!canAccessPeopleInMode(appMode) && isPeoplePage) {
@@ -238,20 +279,19 @@ export default function LayoutContent({
 					<div className="fixed right-4 top-4 z-50">
 						<UserMenu userName={userName} userEmail={userEmail} />
 					</div>
-					<div className="mb-10 max-w-3xl">
-						<h1 className="text-[1.6rem] font-semibold tracking-[-0.03em] text-gray-900 sm:text-[2rem] lg:text-[2.2rem] dark:text-gray-100">
-							{canLaunchProvidersLocally
-								? "Connect a provider"
-								: "Providers are required"}
-						</h1>
-						<p className="mt-3 text-base leading-7 text-gray-500 dark:text-gray-400">
-							{canLaunchProvidersLocally
+					<ProvidersScreen
+						title={
+							canLaunchProvidersLocally
+								? "Connect Providers"
+								: "Providers are required"
+						}
+						description={
+							canLaunchProvidersLocally
 								? "Log in to any provider below, then close the browser window. Your auth is saved automatically, and you can continue as soon as one provider is active."
-								: "Provider auth can only be captured on a local run. Open the local app, connect at least one provider at /providers, then sync the saved auth back here before continuing."}
-						</p>
-					</div>
-
-					<ProviderConnectionsPanel title={null} description={null} />
+								: "Provider auth can only be captured on a local run. Run `pnpm auth` on your local machine, complete sign-in for at least one provider, then sync the saved auth back here before continuing."
+						}
+						nextHref={providersNextHref}
+					/>
 				</main>
 			</>
 		);

@@ -49,7 +49,7 @@ Required if you want users to sign in to the OneGlanse web app with Google.
 | `GOOGLE_CLIENT_ID` | No | — | Google OAuth client ID |
 | `GOOGLE_CLIENT_SECRET` | No | — | Google OAuth client secret |
 
-Note: these are for web app authentication only. Monitoring Google AI Overview uses a separate browser session captured via `/providers`.
+Note: these are for web app authentication only. Monitoring Google AI Overview uses a separate browser session captured via `pnpm auth`.
 
 ---
 
@@ -68,6 +68,8 @@ Used when transferring local provider sessions to a self-hosted VPS.
 
 Required on VPS deployments where direct connections to AI providers are blocked.
 
+This is needed because most VPS providers use datacenter IP ranges, and those IPs are commonly blocked or challenged by AI chat products. OneGlanse uses the proxy only for provider website traffic from the VPS browser runtime.
+
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `THORDATA_PROXY_API_URL` | No | — | ThorData rotating proxy API endpoint |
@@ -78,6 +80,8 @@ Required on VPS deployments where direct connections to AI providers are blocked
 ## Agent / Runtime Overrides
 
 Override the browser runtime defaults. Only needed if the pinned defaults aren't working for your environment.
+
+OneGlanse uses [Camoufox](https://github.com/daijro/camoufox) as its provider browser runtime. This is an anti-fingerprint Firefox-based browser chosen because standard Chrome / Chromium automation is less reliable for authenticated scraping against provider chat UIs.
 
 | Variable | Required | Default | Description |
 |---|---|---|---|

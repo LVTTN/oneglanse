@@ -1,31 +1,32 @@
 import { ProviderConnectionsPanel } from "@/components/provider-connections-panel";
 
+const DEFAULT_PROVIDERS_TITLE = "Connect Providers";
+const DEFAULT_PROVIDERS_DESCRIPTION =
+	"Log in to any provider below, then close the browser window. Your auth is saved automatically, and you can continue as soon as one provider is active.";
+
 export function ProvidersScreen(props: {
 	title?: string | null;
 	description?: string | null;
 	nextHref?: string | null;
 	showSetupNotice?: boolean;
-	isSelfHost?: boolean;
 	workspaceId?: string | null;
 }) {
 	const {
-		title = null,
-		description = null,
+		title = DEFAULT_PROVIDERS_TITLE,
+		description = DEFAULT_PROVIDERS_DESCRIPTION,
 		nextHref = null,
 		showSetupNotice = true,
-		isSelfHost = false,
 		workspaceId = null,
 	} = props;
 
 	return (
-		<div className="web-centered-page">
-			<div className="w-full max-w-4xl xl:max-w-5xl">
+		<div className="flex min-h-full min-w-0 items-center justify-center overflow-x-hidden px-4 pt-5 pb-9 sm:px-8 sm:pt-7 sm:pb-11 lg:px-10">
+			<div className="ui-stagger w-full max-w-4xl xl:max-w-5xl">
 				<ProviderConnectionsPanel
 					title={title}
 					description={description}
 					nextHref={nextHref}
 					showSetupNotice={showSetupNotice}
-					isSelfHost={isSelfHost}
 					workspaceId={workspaceId}
 				/>
 			</div>

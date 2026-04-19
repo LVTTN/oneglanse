@@ -62,7 +62,7 @@ docker logs oneglanse-clickhouse-1
 
 ## Provider auth not saving
 
-**Symptom:** The `/providers` page shows a provider as disconnected after you closed the login window.
+**Symptom:** A provider still shows as disconnected after you finish the local auth flow.
 
 **Cause:** The Camoufox window was closed before the session was fully written.
 
@@ -94,7 +94,7 @@ Note: these control sign-in to the OneGlanse web app itself. They are separate f
 **Causes and fixes:**
 
 1. **Worker not started** — `pnpm local` starts both web and agent. If you started the web app separately, also run `pnpm dev:agent`.
-2. **Provider auth missing** — visit `/providers` and check which providers show a connected status. If a provider is disconnected, reconnect it.
+2. **Provider auth missing** — run `pnpm auth` locally and confirm at least one provider completes sign-in. If a provider is still disconnected, rerun the auth flow for that provider.
 3. **Redis not reachable** — see the Redis section above.
 
 ---

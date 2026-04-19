@@ -21,7 +21,6 @@ export const SITE_URLS = {
 	signup: "https://oneglanse.com/signup",
 	login: "https://oneglanse.com/login",
 	docs: "https://docs.oneglanse.com/",
-	app: "https://app.oneglanse.com",
 	homepage: "https://oneglanse.com",
 } as const;
 
@@ -114,6 +113,5 @@ export const OPEN_SOURCE_POINTS: Array<{ text: string; icon: LucideIcon }> = [
 export const FOOTER_LINKS = [
 	{ label: "Docs", href: SITE_URLS.docs },
 	{ label: "GitHub", href: SITE_URLS.github },
-	{ label: "App", href: SITE_URLS.app },
 	{ label: "License", href: SITE_URLS.githubLicense },
 ] as const;
