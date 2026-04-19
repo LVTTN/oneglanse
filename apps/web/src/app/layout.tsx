@@ -1,4 +1,5 @@
 import "../styles/globals.css";
+import { appIcons } from "@/lib/app-metadata";
 import { TRPCReactProvider } from "@/trpc/react";
 import { Toaster } from "@oneglanse/ui";
 import type { Metadata } from "next";
@@ -8,6 +9,7 @@ import { Geist } from "next/font/google";
 export const metadata: Metadata = {
 	title: "OneGlanse",
 	description: "The open-source GEO & AI Visibility Platform",
+	icons: appIcons,
 };
 
 const geist = Geist({
