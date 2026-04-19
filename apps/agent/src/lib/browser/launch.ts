@@ -313,7 +313,6 @@ export async function launchContext(provider: Provider): Promise<{
 
 		ensureAuthDirectories();
 		const runtimeSeedPlan = await getRuntimeProfileSeedPlan(provider);
-		const shouldForceLoggedOutProfile = appMode === "cloud";
 
 		const camoufoxOptions = await resolveCamoufoxLaunchOptions({
 			display,
@@ -327,11 +326,9 @@ export async function launchContext(provider: Provider): Promise<{
 		rawBrowser = await firefox.launch(launchOptions);
 		rawContext = await rawBrowser.newContext({
 			...(runtimeHeadlessMode === "headless" ? {} : { viewport: null }),
-			...(shouldForceLoggedOutProfile
-				? {}
-				: runtimeSeedPlan.authStatePath
-					? { storageState: runtimeSeedPlan.authStatePath }
-					: {}),
+			...(runtimeSeedPlan.authStatePath
+				? { storageState: runtimeSeedPlan.authStatePath }
+				: {}),
 		});
 
 		context = new PlaywrightBrowserContextCompat(rawContext);

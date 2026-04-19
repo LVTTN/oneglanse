@@ -13,10 +13,7 @@ import {
 import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
 import { api } from "@/trpc/react";
 import type { AppMode } from "@oneglanse/types";
-import {
-	canConfigureRecurringScheduleInMode,
-	canRunPromptsNowInMode,
-} from "@oneglanse/types";
+import { canConfigureRecurringScheduleInMode } from "@oneglanse/types";
 import { Button, Skeleton, toast } from "@oneglanse/ui";
 import { cn } from "@oneglanse/utils";
 import { Calendar, Check, Loader2, PlayCircle } from "lucide-react";
@@ -143,7 +140,7 @@ function ManualRunView({
 				</p>
 				{mode === "local" ? (
 					<p className={cn(formHintClassName, "mt-1")}>
-						Recurring schedules are available in self-host and cloud mode.
+						Recurring schedules are available in self-host mode.
 					</p>
 				) : null}
 			</div>
@@ -341,8 +338,7 @@ export default function SchedulePageClient({
 	const searchParams = useSafeSearchParams();
 	const workspaceId = initialWorkspaceId ?? searchParams.get("workspace") ?? "";
 	const canConfigureSchedule = canConfigureRecurringScheduleInMode(appMode);
-	const canRunNow = canRunPromptsNowInMode(appMode);
-	const [selected, setSelected] = useState<string | null>(null);
+const [selected, setSelected] = useState<string | null>(null);
 	const [saving, setSaving] = useState(false);
 	const [hasInitializedSelection, setHasInitializedSelection] = useState(false);
 	const [runJobId, setRunJobId] = useState<string | null>(null);
@@ -497,13 +493,11 @@ export default function SchedulePageClient({
 	return (
 		<div className="web-page-panel max-w-2xl space-y-6 sm:space-y-7">
 			<ScheduleIntro mode="self-host" />
-			{canRunNow && (
-				<ManualRunView
-					isRunning={isRunning || runNowMutation.isPending}
-					onRunNow={handleRunNow}
-					mode="self-host"
-				/>
-			)}
+			<ManualRunView
+				isRunning={isRunning || runNowMutation.isPending}
+				onRunNow={handleRunNow}
+				mode="self-host"
+			/>
 			{cronTimingQuery.isLoading ? (
 				<div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2">
 					{TIMING_SKELETON_KEYS.map((key) => (

@@ -1,6 +1,5 @@
 import {
 	canAccessPeopleInMode,
-	canAccessProvidersInMode,
 	resolveAppMode,
 } from "@oneglanse/types";
 import { type NextRequest, NextResponse } from "next/server";
@@ -35,10 +34,6 @@ export async function middleware(request: NextRequest) {
 	const workspaceUrl = new URL("/workspace", request.url);
 	if (workspaceId) {
 		workspaceUrl.searchParams.set("workspace", workspaceId);
-	}
-
-	if (pathname.startsWith("/providers") && !canAccessProvidersInMode(appMode)) {
-		return NextResponse.redirect(workspaceUrl);
 	}
 
 	if (pathname.startsWith("/people") && !canAccessPeopleInMode(appMode)) {

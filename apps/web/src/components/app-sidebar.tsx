@@ -9,9 +9,6 @@ import type { Workspace } from "@oneglanse/db";
 import {
 	type AppMode,
 	canAccessPeopleInMode,
-	canAccessProvidersInMode,
-	canAccessScheduleInMode,
-	canRunPromptsNowInMode,
 } from "@oneglanse/types";
 import {
 	DropdownMenu,
@@ -134,24 +131,18 @@ export function AppSidebar({
 		});
 	}
 
-	if (canAccessScheduleInMode(appMode)) {
-		generalItems.splice(3, 0, {
-			title: "Schedule",
-			url: `/schedule?workspace=${activeWorkspace?.id ?? ""}`,
-			icon: Clock,
-		});
-	}
+	generalItems.splice(3, 0, {
+		title: "Schedule",
+		url: `/schedule?workspace=${activeWorkspace?.id ?? ""}`,
+		icon: Clock,
+	});
 
 	const settingsItems = [
-		...(canAccessProvidersInMode(appMode)
-			? [
-					{
-						title: "Providers",
-						url: `/providers?workspace=${activeWorkspace?.id ?? ""}`,
-						icon: Plug,
-					},
-				]
-			: []),
+		{
+			title: "Providers",
+			url: `/providers?workspace=${activeWorkspace?.id ?? ""}`,
+			icon: Plug,
+		},
 		{
 			title: "Settings",
 			url: `/settings?workspace=${activeWorkspace?.id ?? ""}`,

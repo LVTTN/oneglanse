@@ -1,0 +1,264 @@
+---
+title: VPS Deployment
+description: Deploy OneGlanse on your own VPS with nginx, SSL, and automatic provider auth — step by step with copy-paste commands.
+---
+
+# VPS Deployment
+
+This guide deploys OneGlanse on a fresh Ubuntu 22.04 / 24.04 VPS. At the end you'll have:
+
+- OneGlanse running behind nginx with HTTPS
+- Postgres, ClickHouse, and Redis running in Docker
+- Provider sessions uploaded from your local machine
+
+---
+
+## 1. Provision the VPS
+
+Any provider works (Hetzner, DigitalOcean, Vultr, etc.). Minimum spec:
+
+| | Minimum | Recommended |
+|---|---|---|
+| CPU | 2 vCPU | 4 vCPU |
+| RAM | 4 GB | 8 GB |
+| Disk | 40 GB SSD | 80 GB SSD |
+| OS | Ubuntu 22.04 | Ubuntu 24.04 |
+
+Point a DNS A record at your VPS IP before continuing — nginx and certbot need it:
+
+```
+A  app.yourdomain.com  →  YOUR_VPS_IP
+```
+
+---
+
+## 2. Install dependencies
+
+SSH into your VPS and run:
+
+```bash
+# Docker
+curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker $USER
+newgrp docker
+
+# Node.js 20
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# pnpm
+npm install -g pnpm@10
+
+# nginx + certbot
+sudo apt install -y nginx certbot python3-certbot-nginx
+```
+
+---
+
+## 3. Clone and configure
+
+```bash
+git clone https://github.com/aryamantodkar/oneglanse /home/$USER/oneglanse
+cd /home/$USER/oneglanse
+pnpm install
+cp .env.example .env
+```
+
+Edit `.env` and fill in the required values:
+
+```bash
+nano .env
+```
+
+Minimum required changes:
+
+```bash
+# Your public URL
+APP_URL=https://app.yourdomain.com
+API_BASE_URL=https://app.yourdomain.com
+
+# LLM key for response analysis — pick one:
+OPENAI_API_KEY=sk-...
+# or:
+# ANTHROPIC_API_KEY=sk-ant-...
+# ANALYSIS_LLM_PROVIDER=claude
+
+# Residential proxy — required on VPS
+THORDATA_PROXY_API_URL=https://your-thordata-endpoint
+
+# Auth upload token — any strong random string
+AGENT_AUTH_UPLOAD_TOKEN=replace-with-a-strong-secret
+```
+
+The scripts auto-generate `BETTER_AUTH_SECRET` and `INTERNAL_CRON_SECRET` on first run.
+
+---
+
+## 4. Start the stack
+
+```bash
+pnpm self-host
+```
+
+This pulls the Docker images and starts:
+- Web app on port **3000**
+- Agent worker (internal)
+- Postgres on port **5432** (internal)
+- ClickHouse on port **8123** (internal)
+- Redis on port **6379** (internal)
+
+Verify everything is up:
+
+```bash
+docker ps
+```
+
+You should see containers for `web`, `agent-worker`, `postgres`, `clickhouse`, and `redis`.
+
+---
+
+## 5. Configure nginx
+
+Create the nginx site config:
+
+```bash
+sudo nano /etc/nginx/sites-available/oneglanse
+```
+
+Paste this — replace `app.yourdomain.com` with your domain:
+
+```nginx
+server {
+    listen 80;
+    server_name app.yourdomain.com;
+
+    location / {
+        proxy_pass         http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header   Upgrade $http_upgrade;
+        proxy_set_header   Connection 'upgrade';
+        proxy_set_header   Host $host;
+        proxy_set_header   X-Real-IP $remote_addr;
+        proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+        proxy_read_timeout 120s;
+    }
+}
+```
+
+Enable the site and reload:
+
+```bash
+sudo ln -s /etc/nginx/sites-available/oneglanse /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+---
+
+## 6. Enable HTTPS with Let's Encrypt
+
+```bash
+sudo certbot --nginx -d app.yourdomain.com
+```
+
+Certbot will:
+1. Obtain a certificate
+2. Automatically update the nginx config to redirect HTTP → HTTPS
+3. Set up auto-renewal via a systemd timer
+
+Verify auto-renewal works:
+
+```bash
+sudo certbot renew --dry-run
+```
+
+---
+
+## 7. Upload provider auth sessions
+
+Provider auth must be captured on your **local machine** (it needs a real browser). Once captured, upload the sessions to the VPS.
+
+**On your local machine** — set these in your local `.env`:
+
+```bash
+ONEGLANSE_VPS_IP=YOUR_VPS_IP
+AGENT_AUTH_UPLOAD_TOKEN=replace-with-a-strong-secret   # same as on VPS
+```
+
+Then open the provider auth flow and sign in to each provider:
+
+```bash
+pnpm auth
+```
+
+Once connected, upload to the VPS:
+
+```bash
+pnpm upload:vps
+```
+
+Done. The sessions are transferred and the VPS agent will use them immediately.
+
+**Re-run `pnpm upload:vps` whenever a session expires.**
+
+---
+
+## 8. Open the app
+
+Navigate to `https://app.yourdomain.com`, create your account, and start adding prompts.
+
+---
+
+## Updates
+
+Pull and redeploy without downtime:
+
+```bash
+cd /home/$USER/oneglanse
+git pull
+pnpm self-host:app      # restart app + agent only
+```
+
+To also redeploy the landing page:
+
+```bash
+pnpm self-host          # restart everything
+```
+
+---
+
+## Firewall
+
+Allow only the ports nginx needs — block everything else:
+
+```bash
+sudo ufw allow OpenSSH
+sudo ufw allow 'Nginx Full'
+sudo ufw enable
+```
+
+The app ports (3000, 5432, 8123, 6379, 3333) are internal only and stay closed to the internet. The agent's auth upload endpoint (3333) is only reachable from your local machine via `pnpm upload:vps`.
+
+---
+
+## Troubleshooting
+
+**502 Bad Gateway** — the web container isn't running yet. Check:
+```bash
+docker logs oneglanse-web-1 --tail 50
+```
+
+**SSL certificate failed** — DNS hasn't propagated yet. Wait a few minutes and retry:
+```bash
+sudo certbot --nginx -d app.yourdomain.com
+```
+
+**Providers disconnected after reboot** — sessions survive restarts (they're in the volume at `/opt/oneglanse/storage`). If they expire, re-run `pnpm upload:vps` from your local machine.
+
+**VPS ran out of disk** — ClickHouse data grows over time. Check usage:
+```bash
+df -h
+docker system df
+```
