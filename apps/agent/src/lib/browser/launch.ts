@@ -29,8 +29,6 @@ import {
 const DEFAULT_PROXY_PORT: Record<ProxyScheme, number> = {
 	http: 80,
 	https: 443,
-	socks4: 1080,
-	socks5: 1080,
 };
 const THORDATA_PROXY_API_TIMEOUT_MS = 10_000;
 const leasedThorDataProxyUrls = new Set<string>();
@@ -99,11 +97,7 @@ function normalizeProxyScheme(protocol: string): ProxyScheme {
 	switch (normalized) {
 		case "http":
 		case "https":
-		case "socks4":
-		case "socks5":
 			return normalized;
-		case "socks":
-			return "socks5";
 		default:
 			throw new Error(`unsupported proxy protocol: ${protocol}`);
 	}

@@ -8,11 +8,11 @@ import {
 } from "node:http";
 import { logger } from "@oneglanse/utils";
 import { request as httpsRequest } from "node:https";
-import { type Socket, isIP, connect as netConnect } from "node:net";
+import { type Socket, connect as netConnect } from "node:net";
 import type { Duplex } from "node:stream";
 import { connect as tlsConnect } from "node:tls";
 
-export type ProxyScheme = "http" | "https" | "socks4" | "socks5";
+export type ProxyScheme = "http" | "https";
 
 export type UpstreamProxyConfig = {
 	scheme: ProxyScheme;
@@ -156,46 +156,6 @@ function connectTls(host: string, port: number): Promise<Socket> {
 	});
 }
 
-function readExact(socket: Socket, expectedBytes: number): Promise<Buffer> {
-	return new Promise((resolve, reject) => {
-		const chunks: Buffer[] = [];
-		let total = 0;
-
-		const onData = (chunk: Buffer) => {
-			chunks.push(chunk);
-			total += chunk.length;
-
-			if (total < expectedBytes) return;
-
-			cleanup();
-			const payload = Buffer.concat(chunks, total);
-			const head = payload.subarray(0, expectedBytes);
-			const tail = payload.subarray(expectedBytes);
-			if (tail.length > 0) {
-				socket.unshift(tail);
-			}
-			resolve(head);
-		};
-		const onError = (error: Error) => {
-			cleanup();
-			reject(error);
-		};
-		const onClose = () => {
-			cleanup();
-			reject(new Error("socket closed before enough data was received"));
-		};
-		const cleanup = () => {
-			socket.off("data", onData);
-			socket.off("error", onError);
-			socket.off("close", onClose);
-		};
-
-		socket.on("data", onData);
-		socket.once("error", onError);
-		socket.once("close", onClose);
-	});
-}
-
 /**
  * Read from socket until any of the given delimiters is found.
  * Handles both CRLF (\r\n) and LF-only (\n) proxy responses — some proxy
@@ -247,211 +207,16 @@ function readUntilAny(socket: Socket, ...delimiters: string[]): Promise<Buffer> 
 	});
 }
 
-function encodeSocks5Address(host: string, port: number): Buffer {
-	const ipVersion = isIP(host);
-
-	if (ipVersion === 4) {
-		const octets = host.split(".").map((part) => Number(part));
-		return Buffer.from([0x01, ...octets, (port >> 8) & 0xff, port & 0xff]);
-	}
-
-	if (ipVersion === 6) {
-		const [headRaw = "", tailRaw = ""] = host.split("::");
-		const parseHextets = (section: string): number[] =>
-			section
-				.split(":")
-				.filter(Boolean)
-				.flatMap((part) => {
-					if (part.includes(".")) {
-						const octets = part.split(".").map((value) => Number(value));
-						if (
-							octets.length !== 4 ||
-							octets.some(
-								(value) => !Number.isInteger(value) || value < 0 || value > 255,
-							)
-						) {
-							throw new Error(`invalid embedded IPv4 address: ${part}`);
-						}
-
-						const [first, second, third, fourth] = octets;
-						if (
-							first === undefined ||
-							second === undefined ||
-							third === undefined ||
-							fourth === undefined
-						) {
-							throw new Error(`invalid embedded IPv4 address: ${part}`);
-						}
-						return [(first << 8) | second, (third << 8) | fourth];
-					}
-
-					const value = Number.parseInt(part, 16);
-					if (!Number.isInteger(value) || value < 0 || value > 0xffff) {
-						throw new Error(`invalid IPv6 segment: ${part}`);
-					}
-
-					return [value];
-				});
-
-		const head = parseHextets(headRaw);
-		const tail = parseHextets(tailRaw);
-		const zeroFillCount = host.includes("::")
-			? 8 - head.length - tail.length
-			: 0;
-		if (zeroFillCount < 0) {
-			throw new Error(`invalid IPv6 address: ${host}`);
-		}
-
-		const words = host.includes("::")
-			? [...head, ...Array.from({ length: zeroFillCount }, () => 0), ...tail]
-			: [...head, ...tail];
-		if (words.length !== 8) {
-			throw new Error(`invalid IPv6 address: ${host}`);
-		}
-
-		const expanded = Buffer.alloc(16);
-		words.forEach((word, index) => {
-			expanded[index * 2] = (word >> 8) & 0xff;
-			expanded[index * 2 + 1] = word & 0xff;
-		});
-		return Buffer.concat([
-			Buffer.from([0x04]),
-			expanded,
-			Buffer.from([(port >> 8) & 0xff, port & 0xff]),
-		]);
-	}
-
-	const hostBuffer = Buffer.from(host);
-	return Buffer.concat([
-		Buffer.from([0x03, hostBuffer.length]),
-		hostBuffer,
-		Buffer.from([(port >> 8) & 0xff, port & 0xff]),
-	]);
-}
-
-async function connectViaSocks5(
-	proxy: UpstreamProxyConfig,
-	targetHost: string,
-	targetPort: number,
-): Promise<Socket> {
-	const socket = await connectTcp(proxy.host, proxy.port);
-	const methods = proxy.username || proxy.password ? [0x00, 0x02] : [0x00];
-
-	socket.write(Buffer.from([0x05, methods.length, ...methods]));
-	const greeting = await readExact(socket, 2);
-
-	if (greeting[0] !== 0x05 || greeting[1] === 0xff) {
-		socket.destroy();
-		throw new Error("SOCKS5 proxy rejected authentication methods");
-	}
-
-	if (greeting[1] === 0x02) {
-		const username = Buffer.from(proxy.username ?? "");
-		const password = Buffer.from(proxy.password ?? "");
-		socket.write(
-			Buffer.concat([
-				Buffer.from([0x01, username.length]),
-				username,
-				Buffer.from([password.length]),
-				password,
-			]),
-		);
-		const authReply = await readExact(socket, 2);
-		if (authReply[1] !== 0x00) {
-			socket.destroy();
-			throw new Error("SOCKS5 proxy authentication failed");
-		}
-	}
-
-	socket.write(
-		Buffer.concat([
-			Buffer.from([0x05, 0x01, 0x00]),
-			encodeSocks5Address(targetHost, targetPort),
-		]),
-	);
-
-	const responseHeader = await readExact(socket, 4);
-	if (responseHeader[1] !== 0x00) {
-		socket.destroy();
-		throw new Error(`SOCKS5 connect failed with code ${responseHeader[1]}`);
-	}
-
-	const atyp = responseHeader[3];
-	if (atyp === 0x01) {
-		await readExact(socket, 6);
-	} else if (atyp === 0x03) {
-		const length = await readExact(socket, 1);
-		const lengthByte = length.at(0);
-		if (lengthByte === undefined) {
-			socket.destroy();
-			throw new Error("SOCKS5 domain response was missing a length byte");
-		}
-		await readExact(socket, lengthByte + 2);
-	} else if (atyp === 0x04) {
-		await readExact(socket, 18);
-	}
-
-	return socket;
-}
-
-async function connectViaSocks4(
-	proxy: UpstreamProxyConfig,
-	targetHost: string,
-	targetPort: number,
-): Promise<Socket> {
-	if (proxy.password) {
-		throw new Error("SOCKS4 proxies do not support passwords");
-	}
-
-	const socket = await connectTcp(proxy.host, proxy.port);
-	const username = Buffer.from(proxy.username ?? "");
-	const targetIpVersion = isIP(targetHost);
-	if (targetIpVersion === 6) {
-		throw new Error("SOCKS4 proxies do not support IPv6 targets");
-	}
-	const ipBytes =
-		targetIpVersion === 4
-			? Buffer.from(targetHost.split(".").map((part) => Number(part)))
-			: Buffer.from([0x00, 0x00, 0x00, 0x01]);
-	const domainSuffix =
-		targetIpVersion === 4 ? Buffer.alloc(0) : Buffer.from(`${targetHost}\0`);
-
-	socket.write(
-		Buffer.concat([
-			Buffer.from([0x04, 0x01, (targetPort >> 8) & 0xff, targetPort & 0xff]),
-			ipBytes,
-			username,
-			Buffer.from([0x00]),
-			domainSuffix,
-		]),
-	);
-
-	const response = await readExact(socket, 8);
-	if (response[1] !== 0x5a) {
-		socket.destroy();
-		throw new Error(`SOCKS4 connect failed with code ${response[1]}`);
-	}
-
-	return socket;
-}
-
 async function createTunnelSocket(
 	proxy: UpstreamProxyConfig,
 	targetHost: string,
 	targetPort: number,
 ): Promise<Socket> {
-	if (proxy.scheme === "socks5") {
-		return connectViaSocks5(proxy, targetHost, targetPort);
-	}
-
-	if (proxy.scheme === "socks4") {
-		return connectViaSocks4(proxy, targetHost, targetPort);
-	}
-
 	const socket =
 		proxy.scheme === "https"
 			? await connectTls(proxy.host, proxy.port)
 			: await connectTcp(proxy.host, proxy.port);
+
 	const authHeader = buildBasicAuthHeader(proxy);
 	const requestLines = [
 		`CONNECT ${targetHost}:${targetPort} HTTP/1.1`,
@@ -499,46 +264,6 @@ async function handleHttpProxyRequest(
 	trackSocket: (socket: TrackedSocket) => void,
 ): Promise<void> {
 	const target = formatHttpTarget(request);
-
-	if (proxy.scheme === "socks4" || proxy.scheme === "socks5") {
-		const tunnelSocket = await createTunnelSocket(
-			proxy,
-			target.hostname,
-			Number(target.port || 80),
-		);
-		trackSocket(tunnelSocket);
-
-		const upstreamRequest = httpRequest(
-			{
-				method: request.method,
-				host: target.hostname,
-				port: Number(target.port || 80),
-				path: `${target.pathname}${target.search}`,
-				headers: {
-					...sanitizeHeaders(request.headers),
-					host: target.host,
-				},
-				agent: false,
-				createConnection: () => tunnelSocket,
-			},
-			(upstreamResponse) => {
-				response.writeHead(
-					upstreamResponse.statusCode ?? 502,
-					upstreamResponse.statusMessage,
-					upstreamResponse.headers,
-				);
-				upstreamResponse.pipe(response);
-			},
-		);
-
-		upstreamRequest.on("error", (error) => {
-			tunnelSocket.destroy();
-			handleProxyError(response, 502, error);
-		});
-
-		request.pipe(upstreamRequest);
-		return;
-	}
 
 	const proxyAuthHeader = buildBasicAuthHeader(proxy);
 	const transport = proxy.scheme === "https" ? httpsRequest : httpRequest;

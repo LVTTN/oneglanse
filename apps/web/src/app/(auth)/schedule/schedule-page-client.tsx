@@ -123,9 +123,16 @@ function ManualRunView({
 }) {
 	return (
 		<div
-			className={cn(formPanelClassName, "space-y-5 px-5 py-5 sm:px-6 sm:py-6")}
+			className={cn(
+				formPanelClassName,
+				"flex flex-col items-center gap-5 px-6 py-10 text-center sm:px-8 sm:py-12",
+			)}
 		>
-			<div className="space-y-1.5">
+			<div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-white/10">
+				<PlayCircle className="h-6 w-6 text-gray-500 dark:text-gray-400" />
+			</div>
+
+			<div className="space-y-2">
 				<h2 className="text-base font-semibold tracking-[-0.02em] text-gray-900 sm:text-lg dark:text-gray-100">
 					Run prompts now
 				</h2>
@@ -134,34 +141,30 @@ function ManualRunView({
 						? "Start a fresh run whenever you want updated responses."
 						: "Trigger an immediate run without changing the recurring schedule."}
 				</p>
-			</div>
-
-			<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 				{mode === "local" ? (
-					<p className={cn(formHintClassName, "max-w-xl text-left")}>
+					<p className={cn(formHintClassName, "mt-1")}>
 						Recurring schedules are available in self-host and cloud mode.
 					</p>
-				) : (
-					<span />
-				)}
-				<Button
-					onClick={() => void onRunNow()}
-					disabled={isRunning}
-					className="w-full gap-2 sm:w-auto"
-				>
-					{isRunning ? (
-						<>
-							<Loader2 className="h-4 w-4 animate-spin" />
-							Running…
-						</>
-					) : (
-						<>
-							<PlayCircle className="h-4 w-4" />
-							Run Prompts Now
-						</>
-					)}
-				</Button>
+				) : null}
 			</div>
+
+			<Button
+				onClick={() => void onRunNow()}
+				disabled={isRunning}
+				className="gap-2"
+			>
+				{isRunning ? (
+					<>
+						<Loader2 className="h-4 w-4 animate-spin" />
+						Running…
+					</>
+				) : (
+					<>
+						<PlayCircle className="h-4 w-4" />
+						Run Prompts Now
+					</>
+				)}
+			</Button>
 		</div>
 	);
 }
