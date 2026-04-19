@@ -4,7 +4,7 @@
 	"name": "OneGlanse",
 	"logo": {
 		"light": "/images/logo.png",
-		"dark": "/images/logo.png"
+		"dark": "/images/logo-dark.png"
 	},
 	"favicon": "/images/logo.png",
 	"colors": {
