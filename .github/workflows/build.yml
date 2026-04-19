@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'apps/**'
+      - 'docs/**'
       - 'packages/**'
       - '.npmrc'
       - 'package.json'
