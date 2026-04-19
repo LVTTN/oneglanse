@@ -2,7 +2,7 @@ import { BrandLogo } from "@/components/common/brand-logo";
 import { ThemeToggle } from "@/components/common/theme-toggle";
 import { SITE_URLS } from "@/lib/landing-content";
 import { Button } from "@oneglanse/ui";
-import { ArrowRight, Github, Rocket, Server } from "lucide-react";
+import { Github, Server } from "lucide-react";
 
 export function SiteHeader(): React.JSX.Element {
 	return (
@@ -19,13 +19,6 @@ export function SiteHeader(): React.JSX.Element {
 				</a>
 
 				<div className="flex shrink-0 items-center gap-2">
-					<Button asChild className="hidden sm:inline-flex">
-						<a href={SITE_URLS.app} target="_blank" rel="noreferrer noopener">
-							<Rocket className="h-4 w-4" aria-hidden="true" />
-							Try Now
-							<ArrowRight className="h-4 w-4" aria-hidden="true" />
-						</a>
-					</Button>
 					<Button asChild variant="outline">
 						<a
 							href={SITE_URLS.github}
