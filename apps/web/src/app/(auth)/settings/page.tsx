@@ -28,7 +28,6 @@ import {
 	Button,
 	Dialog,
 	DialogContent,
-	DialogDescription,
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
@@ -43,14 +42,12 @@ import {
 } from "@oneglanse/utils";
 import { cn } from "@oneglanse/utils";
 import { Download, Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useLayoutUserEmail } from "../workspace-context";
 
 export default function SettingsPage() {
 	const searchParams = useSafeSearchParams();
 	const workspaceId = searchParams.get("workspace") ?? "";
-	const router = useRouter();
 	const subtleBorderButtonClassName = "border-gray-200/80 dark:border-gray-800";
 	const destructiveSubtleBorderButtonClassName =
 		"border-red-200/80 bg-red-50 text-red-700 hover:bg-red-100 hover:text-red-800 dark:border-red-900/70 dark:bg-red-950/30 dark:text-red-300 dark:hover:bg-red-950/50 dark:hover:text-red-200";
@@ -356,10 +353,6 @@ export default function SettingsPage() {
 						<DialogTitle className="text-lg font-semibold tracking-[-0.01em] text-gray-950 dark:text-gray-50">
 							Delete Account
 						</DialogTitle>
-						<DialogDescription className="text-sm leading-6 text-gray-500 dark:text-gray-400">
-							Deleting your account permanently removes your workspaces and
-							associated data.
-						</DialogDescription>
 					</DialogHeader>
 
 					<div className="px-4 sm:px-4.5 lg:px-5">
