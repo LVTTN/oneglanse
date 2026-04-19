@@ -76,7 +76,11 @@ export function SignupForm({
 		});
 
 		if (error) {
-			toast.error(error.message ?? "Failed to sign up.");
+			const message =
+				error.message?.toLowerCase().includes("already exists")
+					? "An account with this email already exists. Please sign in instead."
+					: (error.message ?? "Failed to sign up.");
+			toast.error(message);
 			setIsLoading(false);
 			return;
 		}
