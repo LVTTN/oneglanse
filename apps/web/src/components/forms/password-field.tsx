@@ -1,8 +1,8 @@
 "use client";
 
 import {
-	authFieldClassName,
-	authLabelClassName,
+	formFieldClassName,
+	formLabelClassName,
 } from "@/components/forms/auth-form-chrome";
 import {
 	FormControl,
@@ -35,13 +35,13 @@ export function PasswordField<T extends FieldValues>({
 					name={name}
 					render={({ field }) => (
 						<FormItem>
-							<FormLabel className={authLabelClassName}>Password</FormLabel>
+							<FormLabel className={formLabelClassName}>Password</FormLabel>
 							<FormControl>
 								<Input
 									type="password"
 									autoComplete={autoComplete}
 									placeholder="Enter your password"
-									className={authFieldClassName}
+									className={formFieldClassName}
 									{...field}
 								/>
 							</FormControl>

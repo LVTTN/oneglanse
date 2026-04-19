@@ -1,9 +1,9 @@
 "use client";
-import { AuthFormChrome } from "@/components/forms/auth-form-chrome";
 import {
-	authFieldClassName,
-	authLabelClassName,
-	authSubmitButtonClassName,
+	AuthFormChrome,
+	formFieldClassName,
+	formLabelClassName,
+	formPrimaryButtonClassName,
 } from "@/components/forms/auth-form-chrome";
 import { PasswordField } from "@/components/forms/password-field";
 import { authClient } from "@/lib/auth/auth-client";
@@ -76,10 +76,9 @@ export function SignupForm({
 		});
 
 		if (error) {
-			const message =
-				error.message?.toLowerCase().includes("already exists")
-					? "An account with this email already exists. Please sign in instead."
-					: (error.message ?? "Failed to sign up.");
+			const message = error.message?.toLowerCase().includes("already exists")
+				? "An account with this email already exists. Please sign in instead."
+				: (error.message ?? "Failed to sign up.");
 			toast.error(message);
 			setIsLoading(false);
 			return;
@@ -107,14 +106,14 @@ export function SignupForm({
 								name="username"
 								render={({ field }) => (
 									<FormItem>
-										<FormLabel className={authLabelClassName}>
+										<FormLabel className={formLabelClassName}>
 											Full name
 										</FormLabel>
 										<FormControl>
 											<Input
 												autoComplete="name"
 												placeholder="Ava Patel"
-												className={authFieldClassName}
+												className={formFieldClassName}
 												{...field}
 											/>
 										</FormControl>
@@ -129,13 +128,13 @@ export function SignupForm({
 								name="email"
 								render={({ field }) => (
 									<FormItem>
-										<FormLabel className={authLabelClassName}>Email</FormLabel>
+										<FormLabel className={formLabelClassName}>Email</FormLabel>
 										<FormControl>
 											<Input
 												type="email"
 												autoComplete="email"
 												placeholder="name@company.com"
-												className={authFieldClassName}
+												className={formFieldClassName}
 												{...field}
 											/>
 										</FormControl>
@@ -151,7 +150,7 @@ export function SignupForm({
 						/>
 						<Button
 							type="submit"
-							className={authSubmitButtonClassName}
+							className={formPrimaryButtonClassName}
 							disabled={isLoading}
 						>
 							{isLoading ? (

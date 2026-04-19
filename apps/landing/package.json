@@ -11,7 +11,6 @@
 		"lint": "biome check ."
 	},
 	"dependencies": {
-		"@oneglanse/types": "workspace:*",
 		"@oneglanse/ui": "workspace:*",
 		"@oneglanse/utils": "workspace:*",
 		"next": "^15.5.5",

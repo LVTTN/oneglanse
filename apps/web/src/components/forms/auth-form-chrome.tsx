@@ -57,9 +57,6 @@ export const formToolbarSelectClassName =
 export const formHintClassName =
 	"text-[8px] leading-3.5 text-gray-400 dark:text-gray-500 sm:text-[9px] sm:leading-4 lg:text-[10px] lg:leading-4.5 xl:text-[11px] xl:leading-5";
 
-export const formChipClassName =
-	"max-w-full rounded-[var(--app-radius)] border border-gray-200/80 bg-stone-50 px-4 py-2 text-left text-xs text-gray-700 transition hover:bg-white dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-950";
-
 export const formDialogContentClassName =
 	"min-w-0 w-full max-w-[min(100vw-1rem,32rem)] overflow-hidden rounded-[var(--app-radius)] border border-transparent bg-white p-0 shadow-[0_12px_34px_-24px_rgba(0,0,0,0.22)] dark:border-transparent dark:bg-neutral-950 dark:shadow-[0_14px_36px_-24px_rgba(0,0,0,0.58)]";
 
@@ -80,9 +77,6 @@ export const formDialogStickyTopClassName =
 export const formDialogScrollBodyClassName =
 	"flex-1 space-y-3 overflow-y-auto px-4 pt-3.5 pb-2 sm:space-y-3.5 sm:px-5 sm:pt-4";
 
-export const formResponseStickyShellClassName =
-	"rounded-[var(--app-radius)] border border-transparent bg-white px-4 py-4 shadow-[0_12px_34px_-24px_rgba(0,0,0,0.18)] backdrop-blur-sm dark:bg-neutral-950 dark:shadow-[0_14px_36px_-24px_rgba(0,0,0,0.48)] sm:px-5 sm:py-5";
-
 export const formDialogFooterClassName =
 	"flex-col-reverse gap-2.5 border-t border-gray-100 px-4 py-3.5 sm:flex-row sm:justify-end sm:px-5 sm:py-4 dark:border-gray-900";
 
@@ -100,10 +94,6 @@ export const formResponseMetricsPanelClassName =
 
 export const formSubtleActionClassName =
 	"inline-flex items-center rounded-[var(--app-radius)] px-0 py-0 text-xs font-medium text-gray-500 transition-colors hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100";
-
-export const authFieldClassName = formFieldClassName;
-export const authLabelClassName = formLabelClassName;
-export const authSubmitButtonClassName = formPrimaryButtonClassName;
 
 export function AuthFormChrome({
 	title,

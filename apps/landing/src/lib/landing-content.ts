@@ -25,7 +25,7 @@ export const SITE_URLS = {
 	homepage: "https://oneglanse.com",
 } as const;
 
-export type FeatureItem = {
+type FeatureItem = {
 	title: string;
 	description: string;
 	icon: LucideIcon;
@@ -77,34 +77,6 @@ export const FEATURE_ITEMS: FeatureItem[] = [
 		icon: Activity,
 	},
 ];
-
-export const ARCHITECTURE_NODES = [
-	{
-		title: "Web App",
-		description:
-			"Authenticated dashboard for workspace setup, prompts, schedules, and metrics.",
-	},
-	{
-		title: "Agent Worker",
-		description:
-			"Playwright-based provider workers process prompt queues and capture responses.",
-	},
-	{
-		title: "Redis",
-		description:
-			"BullMQ queue backbone for per-provider job orchestration and progress tracking.",
-	},
-	{
-		title: "ClickHouse",
-		description:
-			"Analytics store for prompt responses, sources, and computed GEO insights.",
-	},
-	{
-		title: "Docker Deployment",
-		description:
-			"Compose-based separation for web, agent, data stores, and runtime environment.",
-	},
-] as const;
 
 export const STORAGE_KEY = "oneglanse-landing-theme" as const;
 

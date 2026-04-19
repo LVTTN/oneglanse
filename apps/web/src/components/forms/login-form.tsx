@@ -1,9 +1,9 @@
 "use client";
-import { AuthFormChrome } from "@/components/forms/auth-form-chrome";
 import {
-	authFieldClassName,
-	authLabelClassName,
-	authSubmitButtonClassName,
+	AuthFormChrome,
+	formFieldClassName,
+	formLabelClassName,
+	formPrimaryButtonClassName,
 } from "@/components/forms/auth-form-chrome";
 import { PasswordField } from "@/components/forms/password-field";
 import { authClient } from "@/lib/auth/auth-client";
@@ -100,13 +100,13 @@ export function LoginForm({
 								name="email"
 								render={({ field }) => (
 									<FormItem>
-										<FormLabel className={authLabelClassName}>Email</FormLabel>
+										<FormLabel className={formLabelClassName}>Email</FormLabel>
 										<FormControl>
 											<Input
 												type="email"
 												autoComplete="email"
 												placeholder="name@company.com"
-												className={authFieldClassName}
+												className={formFieldClassName}
 												{...field}
 											/>
 										</FormControl>
@@ -118,7 +118,7 @@ export function LoginForm({
 						<PasswordField control={form.control} name="password" />
 						<Button
 							type="submit"
-							className={authSubmitButtonClassName}
+							className={formPrimaryButtonClassName}
 							disabled={isLoading}
 						>
 							{isLoading ? (

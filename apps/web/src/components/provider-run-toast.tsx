@@ -126,8 +126,6 @@ function ProviderRunToastCard({
 function showProviderToast(args: {
 	provider: Provider;
 	phase: DisplayPhase;
-	workspaceId: string;
-	jobId: string;
 	promptNumber?: number;
 	totalPrompts?: number;
 	onStop?: () => void | Promise<void>;
@@ -156,7 +154,7 @@ function showProviderToast(args: {
 	);
 }
 
-export function useProviderRunToast(args: {
+function useProviderRunToast(args: {
 	active: boolean;
 	workspaceId: string;
 	jobId: string | null;
@@ -283,8 +281,6 @@ export function useProviderRunToast(args: {
 				showProviderToast({
 					provider: transitionedProvider,
 					phase: nextPhase,
-					workspaceId,
-					jobId,
 					onStop: buildStopHandler(transitionedProvider),
 					isStopping: stoppingProvider === transitionedProvider,
 				});
@@ -317,8 +313,6 @@ export function useProviderRunToast(args: {
 						showProviderToast({
 							provider: nextRunningProvider,
 							phase: "running",
-							workspaceId,
-							jobId,
 							promptNumber: nextPromptNumber,
 							totalPrompts: latest.totalPrompts,
 							onStop: buildStopHandler(nextRunningProvider),
@@ -371,8 +365,6 @@ export function useProviderRunToast(args: {
 					showProviderToast({
 						provider: nextPendingProvider,
 						phase: "pending",
-						workspaceId,
-						jobId,
 						onStop: buildStopHandler(nextPendingProvider),
 						isStopping: stoppingProvider === nextPendingProvider,
 					});
@@ -413,22 +405,13 @@ export function useProviderRunToast(args: {
 			showProviderToast({
 				provider: nextRunningProvider,
 				phase: "running",
-				workspaceId,
-				jobId,
 				promptNumber: nextPromptNumber,
 				totalPrompts: parsed.totalPrompts,
 				onStop: buildStopHandler(nextRunningProvider),
 				isStopping: stoppingProvider === nextRunningProvider,
 			});
 		}
-	}, [
-		active,
-		jobId,
-		parsed,
-		response,
-		stoppingProvider,
-		workspaceId,
-	]);
+	}, [active, buildStopHandler, jobId, parsed, response, stoppingProvider]);
 }
 
 export function ProviderRunToastManager() {

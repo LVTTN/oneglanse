@@ -1,3 +1,4 @@
+import { BrandLogo } from "@/components/common/brand-logo";
 import { ThemeToggle } from "@/components/common/theme-toggle";
 import { SITE_URLS } from "@/lib/landing-content";
 import { Button } from "@oneglanse/ui";
@@ -13,11 +14,7 @@ export function SiteHeader(): React.JSX.Element {
 					target="_blank"
 					rel="noreferrer noopener"
 				>
-					<img
-						src="/logo.png"
-						alt="OneGlanse"
-						className="h-6 w-6 object-contain"
-					/>
+					<BrandLogo className="h-6 w-6" />
 					OneGlanse
 				</a>
 

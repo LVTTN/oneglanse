@@ -1,6 +1,6 @@
 import { submitAgentJobGroup } from "@oneglanse/services";
 
-export type SubmitAgentRunResult =
+type SubmitAgentRunResult =
 	| { jobId: string; status: "queued" }
 	| { jobId: null; status: "empty" }
 	| { jobId: null; status: "no-providers"; disconnectedProviders: string[] };

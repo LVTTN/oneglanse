@@ -1,3 +1,4 @@
+import { BrandLogo } from "@/components/common/brand-logo";
 import { FOOTER_LINKS } from "@/lib/landing-content";
 
 export function SiteFooter(): React.JSX.Element {
@@ -5,11 +6,7 @@ export function SiteFooter(): React.JSX.Element {
 		<footer className="border-t border-gray-200 py-8 dark:border-gray-800">
 			<div className="section-shell flex flex-col gap-4 text-center text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:text-left">
 				<div className="flex items-center gap-2">
-					<img
-						src="/logo.png"
-						alt="OneGlanse"
-						className="h-5 w-5 object-contain"
-					/>
+					<BrandLogo className="h-5 w-5" />
 					<p>© {new Date().getFullYear()} OneGlanse</p>
 				</div>
 				<nav aria-label="Footer links">

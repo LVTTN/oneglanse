@@ -11,13 +11,6 @@ import type {
 	ProviderConnectionsState,
 } from "./types";
 
-export type {
-	ProviderConnectionAction,
-	ProviderConnectionCard,
-	ProviderConnectionRequest,
-	ProviderConnectionsState,
-} from "./types";
-
 const PROVIDER_CONNECTIONS_QUERY_KEY = ["provider-connections"] as const;
 const PROVIDER_CONNECTIONS_POLL_INTERVAL_MS = 3_000;
 
