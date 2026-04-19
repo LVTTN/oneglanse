@@ -1,5 +1,6 @@
 import "../../styles/globals.css";
 import { auth } from "@/lib/auth/auth";
+import { appIcons } from "@/lib/app-metadata";
 import { readProviderConnectionsState } from "@/lib/provider-connections/server";
 import { getWorkspace } from "@/lib/workspace/getWorkspace";
 import { TRPCReactProvider } from "@/trpc/react";
@@ -14,9 +15,7 @@ import LayoutContent from "./layoutContent";
 export const metadata: Metadata = {
 	title: "OneGlanse",
 	description: "The open-source alternative to PeecAI",
-	icons: {
-		icon: "/icon.svg",
-	},
+	icons: appIcons,
 };
 
 const geist = Geist({
