@@ -8,7 +8,7 @@ export function SiteFooter(): React.JSX.Element {
 					<img
 						src="/logo.png"
 						alt="OneGlanse"
-						className="h-5 w-5 rounded-md object-contain"
+						className="h-5 w-5 rounded-xl object-contain"
 					/>
 					<p>© {new Date().getFullYear()} OneGlanse</p>
 				</div>
