@@ -29,6 +29,8 @@ export function CreateWorkspaceDialog({
 		slug: "",
 		domain: "",
 	});
+	const [slugTouched, setSlugTouched] = useState(false);
+	const [domainTouched, setDomainTouched] = useState(false);
 	const [loading, setLoading] = useState(false);
 	const router = useRouter();
 	const utils = api.useUtils();
@@ -37,6 +39,8 @@ export function CreateWorkspaceDialog({
 
 	const resetForm = () => {
 		setFormData({ name: "", slug: "", domain: "" });
+		setSlugTouched(false);
+		setDomainTouched(false);
 	};
 
 	const handleNameChange = (value: string) => {
@@ -44,7 +48,13 @@ export function CreateWorkspaceDialog({
 			.toLowerCase()
 			.replace(/[^a-z0-9]+/g, "-")
 			.replace(/^-|-$/g, "");
-		setFormData({ ...formData, name: value, slug });
+		const domain = slug ? `www.${slug}.com` : "";
+		setFormData({
+			...formData,
+			name: value,
+			slug: slugTouched ? formData.slug : slug,
+			domain: domainTouched ? formData.domain : domain,
+		});
 	};
 
 	const handleSubmit = async () => {
@@ -134,7 +144,10 @@ export function CreateWorkspaceDialog({
 						autoComplete="off"
 						placeholder="my-workspace"
 						value={formData.slug}
-						onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+						onChange={(e) => {
+						setSlugTouched(true);
+						setFormData({ ...formData, slug: e.target.value });
+					}}
 						className={formFieldClassName}
 					/>
 				</div>
@@ -149,9 +162,10 @@ export function CreateWorkspaceDialog({
 						inputMode="url"
 						placeholder="e.g. pipedrive.com"
 						value={formData.domain}
-						onChange={(e) =>
-							setFormData({ ...formData, domain: e.target.value })
-						}
+						onChange={(e) => {
+							setDomainTouched(true);
+							setFormData({ ...formData, domain: e.target.value });
+						}}
 						className={formFieldClassName}
 					/>
 					<p className={formHintClassName}>
