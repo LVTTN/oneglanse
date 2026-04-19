@@ -9,10 +9,15 @@ export function SiteHeader(): React.JSX.Element {
 			<div className="landing-surface flex items-center justify-between gap-3 px-4 py-3 sm:px-5">
 				<a
 					href={SITE_URLS.homepage}
-					className="inline-flex items-center text-base font-semibold tracking-tight sm:text-lg"
+					className="inline-flex items-center gap-2 text-base font-semibold tracking-tight sm:text-lg"
 					target="_blank"
 					rel="noreferrer noopener"
 				>
+					<img
+						src="/logo.png"
+						alt="OneGlanse"
+						className="h-6 w-6 rounded-lg object-contain"
+					/>
 					OneGlanse
 				</a>
 

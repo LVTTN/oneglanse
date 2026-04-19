@@ -9,6 +9,10 @@ const geist = Geist({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://oneglanse.com"),
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
+  },
   title: "OneGlanse | Open-source GEO & AI Visibility Platform",
   description:
     "Track brand visibility across LLM providers with self-hostable agents, ClickHouse analytics, and reproducible prompt testing.",

@@ -7,9 +7,10 @@ import { Geist } from "next/font/google";
 
 export const metadata: Metadata = {
 	title: "OneGlanse",
-	description: "The open-source alternative to PeecAI",
+	description: "The open-source GEO & AI Visibility Platform",
 	icons: {
-		icon: "/icon.svg",
+		icon: "/logo.png",
+		apple: "/logo.png",
 	},
 };
 

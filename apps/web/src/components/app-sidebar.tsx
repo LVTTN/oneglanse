@@ -192,6 +192,16 @@ export function AppSidebar({
 		<>
 			<Sidebar className="flex h-full min-h-full flex-col self-stretch bg-white dark:bg-neutral-950">
 				<SidebarHeader className="p-3">
+					<div className="flex items-center gap-2 px-1 pb-2 pt-0.5">
+						<img
+							src="/logo.png"
+							alt="OneGlanse"
+							className="h-5 w-5 rounded-md object-contain"
+						/>
+						<span className="text-[13px] font-semibold tracking-[-0.02em] text-gray-900 dark:text-gray-100">
+							OneGlanse
+						</span>
+					</div>
 					<SidebarMenu>
 						<SidebarMenuItem>
 							<DropdownMenu>
