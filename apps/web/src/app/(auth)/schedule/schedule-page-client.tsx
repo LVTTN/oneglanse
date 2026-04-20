@@ -120,23 +120,25 @@ function ManualRunView({
 }) {
 	if (mode === "local") {
 		return (
-			<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-				<div className={cn(formPanelClassName, "flex flex-col gap-5 px-5 py-6")}>
-					<div className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 dark:bg-white/10">
-						<PlayCircle className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-					</div>
-					<div className="space-y-1">
-						<h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-							Run prompts
-						</h2>
-						<p className="text-sm text-gray-500 dark:text-gray-400">
-							Run all providers and get fresh responses on demand.
-						</p>
+			<div className="flex flex-col gap-3">
+				<div className={cn(formPanelClassName, "flex items-center justify-between gap-4 px-5 py-5")}>
+					<div className="flex items-center gap-4">
+						<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-white/10">
+							<PlayCircle className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+						</div>
+						<div className="space-y-0.5">
+							<h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+								Run prompts
+							</h2>
+							<p className="text-sm text-gray-500 dark:text-gray-400">
+								Run all providers and get fresh responses on demand.
+							</p>
+						</div>
 					</div>
 					<Button
 						onClick={() => void onRunNow()}
 						disabled={isRunning}
-						className="w-full"
+						className="shrink-0"
 					>
 						{isRunning ? (
 							<>
@@ -149,31 +151,23 @@ function ManualRunView({
 					</Button>
 				</div>
 
-				<div
-					className={cn(
-						formPanelClassName,
-						"flex flex-col gap-5 px-5 py-6 opacity-50",
-					)}
-				>
-					<div className="flex items-center justify-between">
-						<div className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 dark:bg-white/10">
+				<div className={cn(formPanelClassName, "flex items-center justify-between gap-4 px-5 py-5 opacity-50")}>
+					<div className="flex items-center gap-4">
+						<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-white/10">
 							<Calendar className="h-4 w-4 text-gray-500 dark:text-gray-400" />
 						</div>
-						<span className="rounded-full border border-gray-200 px-2 py-0.5 text-[11px] font-medium text-gray-500 dark:border-gray-700 dark:text-gray-400">
-							Self-host only
-						</span>
+						<div className="space-y-0.5">
+							<h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+								Recurring schedules
+							</h2>
+							<p className="text-sm text-gray-500 dark:text-gray-400">
+								Auto-run on a schedule. Available in self-host mode.
+							</p>
+						</div>
 					</div>
-					<div className="space-y-1">
-						<h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-							Recurring schedules
-						</h2>
-						<p className="text-sm text-gray-500 dark:text-gray-400">
-							Auto-run prompts every 12 hours, daily, or on a custom cadence.
-						</p>
-					</div>
-					<Button variant="outline" disabled className="w-full">
-						Configure schedule
-					</Button>
+					<span className="shrink-0 rounded-full border border-gray-200 px-2.5 py-1 text-[11px] font-medium text-gray-500 dark:border-gray-700 dark:text-gray-400">
+						Self-host
+					</span>
 				</div>
 			</div>
 		);
@@ -528,7 +522,7 @@ export default function SchedulePageClient({
 	if (!canConfigureSchedule) {
 		return (
 			<div className="web-centered-state">
-				<div className="w-full max-w-lg">
+				<div className="w-full max-w-md">
 					<ManualRunView
 						isRunning={isRunning || runNowMutation.isPending}
 						onRunNow={handleRunNow}
