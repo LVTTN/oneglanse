@@ -94,6 +94,21 @@ function getConnectionStatusMessage(
 	return card.status.error;
 }
 
+function formatConnectionUpdatedAt(timestamp: string | null): string | null {
+	if (!timestamp) {
+		return null;
+	}
+
+	return new Date(timestamp).toLocaleString(undefined, {
+		month: "short",
+		day: "numeric",
+		year: "numeric",
+		hour: "2-digit",
+		minute: "2-digit",
+		hour12: true,
+	});
+}
+
 function getConnectionCardClasses(card: ProviderConnectionCard): string {
 	if (card.status.connecting) {
 		return `${formPanelClassName} border-gray-200/40 bg-stone-50 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] dark:border-white/5 dark:bg-neutral-900 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)]`;
@@ -134,6 +149,7 @@ export function ProviderConnectionsPanel(props: {
 	showSetupNotice?: boolean;
 	workspaceId?: string | null;
 	showOnboardingActions?: boolean;
+	watchForExternalUpdates?: boolean;
 }) {
 	const {
 		title = "Providers",
@@ -142,9 +158,12 @@ export function ProviderConnectionsPanel(props: {
 		showSetupNotice = true,
 		workspaceId = null,
 		showOnboardingActions = false,
+		watchForExternalUpdates = false,
 	} = props;
 	const router = useRouter();
-	const authProvidersQuery = useProviderConnections();
+	const authProvidersQuery = useProviderConnections({
+		watchForExternalUpdates,
+	});
 	const resolvedWorkspaceId = workspaceId ?? "";
 
 	const enabledProvidersQuery = api.workspace.getEnabledProviders.useQuery(
@@ -258,14 +277,17 @@ export function ProviderConnectionsPanel(props: {
 		cards.some((card) => card.status.connecting);
 
 	const handleSkipForNow = () => {
-		if (!nextHref) {
-			return;
-		}
-
 		writeSkipProviderGate(true);
 		setShowSkipDialog(false);
-		router.push(nextHref);
+		router.push(nextHref ?? "/workspace");
 	};
+
+	const canInteractivelyConnect =
+		authProvidersQuery.data?.interactiveConnectAllowed ?? true;
+	const shouldShowExternalContinueAction =
+		showOnboardingActions &&
+		!canInteractivelyConnect &&
+		!hasAtLeastOneConnection;
 
 	return (
 		<section>
@@ -320,17 +342,18 @@ export function ProviderConnectionsPanel(props: {
 				</p>
 			) : null}
 
-			{showSetupNotice &&
-			!authProvidersQuery.data?.interactiveConnectAllowed ? (
+			{showSetupNotice && !canInteractivelyConnect ? (
 				<p className="mb-6 rounded-[var(--app-radius)] border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
 					To connect or refresh providers, run{" "}
 					<code className="rounded px-1 font-mono text-xs">pnpm auth</code> on
-					your local machine, then finish sign-in on the local{" "}
+					your local machine, finish sign-in on the local{" "}
 					<code className="rounded px-1 font-mono text-xs">
 						/providers/local
 					</code>{" "}
-					page. When the local auth flow finishes, you can choose whether to
-					upload the saved sessions to your VPS.
+					page, then upload the saved sessions to this VPS.{" "}
+					{watchForExternalUpdates
+						? "This page updates automatically as soon as uploaded sessions are detected."
+						: "Refresh this page after the upload completes to see the updated provider status."}
 				</p>
 			) : null}
 
@@ -348,6 +371,9 @@ export function ProviderConnectionsPanel(props: {
 					const cardTitle = getConnectionCardTitle(card);
 					const statusLabel = getConnectionStatusLabel(card);
 					const statusMessage = getConnectionStatusMessage(card);
+					const updatedAtLabel = formatConnectionUpdatedAt(
+						status.lastUpdatedAt,
+					);
 					const canInteractivelyReconnect = Boolean(
 						authProvidersQuery.data?.interactiveConnectAllowed,
 					);
@@ -389,9 +415,16 @@ export function ProviderConnectionsPanel(props: {
 												</p>
 											</div>
 											{isConnected && !statusMessage ? (
-												<div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
-													<CheckCircle2 className="h-3.5 w-3.5" />
-													Ready for prompt runs
+												<div className="mt-1.5 space-y-1">
+													<div className="flex flex-wrap items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
+														<CheckCircle2 className="h-3.5 w-3.5" />
+														Ready for prompt runs
+													</div>
+													{updatedAtLabel ? (
+														<p className="text-[11px] leading-4.5 text-gray-500 dark:text-gray-400">
+															Updated {updatedAtLabel}
+														</p>
+													) : null}
 												</div>
 											) : null}
 											{statusMessage ? (
@@ -498,9 +531,9 @@ export function ProviderConnectionsPanel(props: {
 				})}
 			</div>
 
-			{showOnboardingActions && nextHref ? (
+			{showOnboardingActions ? (
 				<div className="mt-6 flex items-center justify-end gap-3">
-					{hasAtLeastOneConnection ? (
+					{hasAtLeastOneConnection && nextHref ? (
 						<Button
 							variant="ghost"
 							className={cn(
@@ -514,17 +547,27 @@ export function ProviderConnectionsPanel(props: {
 							<ArrowRight className="h-4 w-4" />
 						</Button>
 					) : null}
-					<Button
-						variant="ghost"
-						onClick={() => setShowSkipDialog(true)}
-						disabled={isAnyConnectionPending}
-						className={cn(
-							formSecondaryButtonClassName,
-							"h-10 w-auto border border-gray-200/80 px-3.5 text-[11px] dark:border-gray-700",
-						)}
-					>
-						Skip for now
-					</Button>
+					{shouldShowExternalContinueAction ? (
+						<Button
+							onClick={handleSkipForNow}
+							disabled={isAnyConnectionPending}
+							className={cn(formPrimaryButtonClassName, "h-11 w-auto px-5")}
+						>
+							OK, understood
+						</Button>
+					) : nextHref ? (
+						<Button
+							variant="ghost"
+							onClick={() => setShowSkipDialog(true)}
+							disabled={isAnyConnectionPending}
+							className={cn(
+								formSecondaryButtonClassName,
+								"h-10 w-auto border border-gray-200/80 px-3.5 text-[11px] dark:border-gray-700",
+							)}
+						>
+							Skip for now
+						</Button>
+					) : null}
 				</div>
 			) : null}
 
