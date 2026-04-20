@@ -239,15 +239,13 @@ Then open the provider auth flow and sign in to each provider:
 pnpm auth
 ```
 
-Once connected, upload to the VPS:
+At the end of the sign-in flow, `pnpm auth` will ask whether to upload to the VPS — answer `y`. Sessions are transferred and the VPS agent picks them up immediately.
+
+When a session expires later and you want to re-upload without going through the sign-in flow again:
 
 ```bash
 pnpm upload:vps
 ```
-
-Done. The sessions are transferred and the VPS agent will use them immediately.
-
-**Re-run `pnpm upload:vps` whenever a session expires.**
 
 ---
 

@@ -168,21 +168,26 @@ The reason is twofold:
 - provider sign-in is much more reliable on your local machine
 - the resulting sessions can then be reused by the VPS worker after upload
 
-On your local machine:
+On your local machine, set these in `.env`:
 
 ```bash
 ONEGLANSE_VPS_IP=your-vps-ip
-AGENT_AUTH_UPLOAD_TOKEN=your-secret-token
+AGENT_AUTH_UPLOAD_TOKEN=your-secret-token   # same token as on the VPS
 ```
 
-Then:
+Then run the auth flow:
 
 ```bash
 pnpm auth
-pnpm upload:vps
 ```
 
-Repeat when sessions expire.
+`pnpm auth` opens the provider sign-in browser, captures sessions, then asks whether to upload to the VPS — answer `y`. Sessions are transferred immediately.
+
+When a session expires later and you want to re-upload without going through the sign-in flow again:
+
+```bash
+pnpm upload:vps
+```
 
 ---
 
