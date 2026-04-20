@@ -131,12 +131,12 @@ function ManualRunView({
 
 			<div className="space-y-2">
 				<h2 className="text-base font-semibold tracking-[-0.02em] text-gray-900 sm:text-lg dark:text-gray-100">
-					Run prompts now
+					Manual run
 				</h2>
 				<p className="text-sm leading-6 text-gray-500 dark:text-gray-400">
 					{mode === "local"
 						? "Start a fresh run whenever you want updated responses."
-						: "Trigger an immediate run without changing the recurring schedule."}
+						: "Trigger one immediate run without changing the recurring schedule."}
 				</p>
 				{mode === "local" ? (
 					<p className={cn(formHintClassName, "mt-1")}>
@@ -148,7 +148,7 @@ function ManualRunView({
 			<Button
 				onClick={() => void onRunNow()}
 				disabled={isRunning}
-				className="gap-2"
+				className="min-w-32"
 			>
 				{isRunning ? (
 					<>
@@ -156,10 +156,7 @@ function ManualRunView({
 						Running…
 					</>
 				) : (
-					<>
-						<PlayCircle className="h-4 w-4" />
-						Run Prompts Now
-					</>
+					"Start run"
 				)}
 			</Button>
 		</div>
@@ -338,7 +335,7 @@ export default function SchedulePageClient({
 	const searchParams = useSafeSearchParams();
 	const workspaceId = initialWorkspaceId ?? searchParams.get("workspace") ?? "";
 	const canConfigureSchedule = canConfigureRecurringScheduleInMode(appMode);
-const [selected, setSelected] = useState<string | null>(null);
+	const [selected, setSelected] = useState<string | null>(null);
 	const [saving, setSaving] = useState(false);
 	const [hasInitializedSelection, setHasInitializedSelection] = useState(false);
 	const [runJobId, setRunJobId] = useState<string | null>(null);

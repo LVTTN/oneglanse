@@ -439,7 +439,7 @@ function hasUsableAuthState(state: StorageState | null): boolean {
 	return (state.cookies?.length ?? 0) > 0 || (state.origins?.length ?? 0) > 0;
 }
 
-async function readPersistedAuthStatus(
+export async function readPersistedAuthStatus(
 	provider: AuthProvider,
 ): Promise<PersistedAuthStatus | null> {
 	try {
@@ -1032,7 +1032,9 @@ export async function spawnProviderAuthLogin(
 			cwd,
 			env: await getSpawnEnv(),
 			stdio: "ignore",
+			detached: true,
 		});
+		child.unref();
 
 		await writeProviderAuthStatus(provider, {
 			connecting: true,

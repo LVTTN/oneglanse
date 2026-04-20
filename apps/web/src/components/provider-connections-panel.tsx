@@ -29,7 +29,13 @@ import {
 	toast,
 } from "@oneglanse/ui";
 import { cn, getModelFavicon } from "@oneglanse/utils";
-import { ArrowRight, CheckCircle2, Loader2, RotateCcw, RotateCw } from "lucide-react";
+import {
+	ArrowRight,
+	CheckCircle2,
+	Loader2,
+	RotateCcw,
+	RotateCw,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -432,7 +438,10 @@ export function ProviderConnectionsPanel(props: {
 										<Button
 											variant="ghost"
 											size="icon"
-											className="size-9 shrink-0 rounded-full border border-gray-200/80 bg-white p-0 text-gray-500 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_18px_-14px_rgba(15,23,42,0.12)] transition-all hover:bg-stone-100 hover:text-gray-950 hover:shadow-[0_1px_2px_rgba(15,23,42,0.08),0_16px_30px_-16px_rgba(15,23,42,0.22)] disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-300 dark:shadow-[0_1px_2px_rgba(0,0,0,0.14),0_10px_24px_-16px_rgba(0,0,0,0.4)] dark:hover:bg-gray-800 dark:hover:text-gray-100 dark:hover:shadow-[0_1px_2px_rgba(0,0,0,0.18),0_16px_30px_-16px_rgba(0,0,0,0.5)]"
+											className={cn(
+												formSecondaryButtonClassName,
+												"size-9 shrink-0 border border-gray-200/80 p-0 text-gray-500 dark:border-gray-700 dark:text-gray-300",
+											)}
 											onClick={() =>
 												providerActionMutation.mutate({
 													provider: card.provider,
@@ -491,8 +500,11 @@ export function ProviderConnectionsPanel(props: {
 				<div className="mt-6 flex items-center justify-end gap-3">
 					{hasAtLeastOneConnection ? (
 						<Button
-							variant="default"
-							className={cn(formPrimaryButtonClassName, "h-11 w-auto px-5")}
+							variant="ghost"
+							className={cn(
+								formSecondaryButtonClassName,
+								"h-11 w-auto gap-2 border border-gray-200/80 px-5 text-sm font-medium dark:border-gray-700",
+							)}
 							onClick={() => router.push(nextHref)}
 							disabled={isAnyConnectionPending}
 						>
@@ -506,7 +518,7 @@ export function ProviderConnectionsPanel(props: {
 						disabled={isAnyConnectionPending}
 						className={cn(
 							formSecondaryButtonClassName,
-							"h-10 w-auto px-3.5 text-[11px]",
+							"h-10 w-auto border border-gray-200/80 px-3.5 text-[11px] dark:border-gray-700",
 						)}
 					>
 						Skip for now

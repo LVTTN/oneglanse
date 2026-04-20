@@ -4,6 +4,7 @@ import {
 	ensureAuthDirectories,
 	getReusableIdentityDomainSuffixes,
 	readAuthLaunchSeedState,
+	readPersistedAuthStatus,
 	saveAuthSession,
 	saveReusableIdentitySessions,
 	uploadAuthSession,
@@ -208,9 +209,7 @@ function cloneCookies(
 	);
 }
 
-function toPlaywrightStorageState(
-	state: PersistedStorageState | null,
-):
+function toPlaywrightStorageState(state: PersistedStorageState | null):
 	| {
 			cookies: Array<{
 				name: string;
@@ -246,8 +245,7 @@ function toPlaywrightStorageState(
 					value: cookie.value ?? "",
 					domain,
 					path: cookie.path?.trim() || "/",
-					expires:
-						typeof cookie.expires === "number" ? cookie.expires : -1,
+					expires: typeof cookie.expires === "number" ? cookie.expires : -1,
 					httpOnly: Boolean(cookie.httpOnly),
 					secure: Boolean(cookie.secure),
 					sameSite: cookie.sameSite ?? "Lax",
@@ -718,9 +716,7 @@ async function runAuthLogin(provider: AuthProvider): Promise<void> {
 	});
 	const context = await browser.newContext({
 		viewport: null,
-		...(playwrightStorageState
-			? { storageState: playwrightStorageState }
-			: {}),
+		...(playwrightStorageState ? { storageState: playwrightStorageState } : {}),
 	});
 	attachAuthDebugLogging(context, provider);
 
@@ -751,11 +747,25 @@ async function runAuthLogin(provider: AuthProvider): Promise<void> {
 }
 
 const provider = parseProviderArg(process.argv.slice(2));
-runAuthLogin(provider).then(() => process.exit(0)).catch((error) => {
-	const runtimeProvider = AUTH_PROVIDER_CONFIG[provider].providers[0];
-	const providerName = runtimeProvider
-		? getProviderDisplayName(runtimeProvider)
-		: provider;
-	console.error(`[auth] ${providerName} login failed:`, error);
-	process.exit(1);
-});
+runAuthLogin(provider)
+	.then(() => process.exit(0))
+	.catch(async (error) => {
+		const runtimeProvider = AUTH_PROVIDER_CONFIG[provider].providers[0];
+		const providerName = runtimeProvider
+			? getProviderDisplayName(runtimeProvider)
+			: provider;
+		const errorMessage = error instanceof Error ? error.message : String(error);
+		console.error(`[auth] ${providerName} login failed:`, error);
+		// Failures before the browser context exists bypass the inner status update.
+		const existingStatus = await readPersistedAuthStatus(provider).catch(
+			() => null,
+		);
+		await writeProviderAuthStatus(provider, {
+			connecting: false,
+			lastUpdatedAt: new Date().toISOString(),
+			syncedAt: existingStatus?.syncedAt ?? null,
+			error: errorMessage,
+			launcherPid: null,
+		}).catch(() => {});
+		process.exit(1);
+	});
