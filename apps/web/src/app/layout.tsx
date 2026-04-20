@@ -7,9 +7,25 @@ import { ThemeProvider } from "next-themes";
 import { Geist } from "next/font/google";
 
 export const metadata: Metadata = {
+	metadataBase: new URL(process.env.APP_URL ?? "https://app.oneglanse.com"),
 	title: "OneGlanse",
-	description: "The open-source GEO & AI Visibility Platform",
+	description:
+		"Track how your brand appears in ChatGPT, Gemini, Perplexity, Claude, and AI Overview.",
 	icons: appIcons,
+	openGraph: {
+		title: "OneGlanse",
+		description:
+			"Track how your brand appears in ChatGPT, Gemini, Perplexity, Claude, and AI Overview.",
+		type: "website",
+		images: [{ url: "/opengraph-image", width: 1200, height: 630 }],
+	},
+	twitter: {
+		card: "summary_large_image",
+		title: "OneGlanse",
+		description:
+			"Track how your brand appears in ChatGPT, Gemini, Perplexity, Claude, and AI Overview.",
+		images: ["/opengraph-image"],
+	},
 };
 
 const geist = Geist({

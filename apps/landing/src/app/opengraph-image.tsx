@@ -18,64 +18,73 @@ export default function OpenGraphImage(): ImageResponse {
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          padding: "52px",
-          background:
-            "linear-gradient(160deg, #ffffff 0%, #f7f7f7 55%, #f2f2f2 100%)",
-          color: "#111111",
-          fontFamily: "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif",
+          padding: "60px",
+          background: "linear-gradient(135deg, #09090b 0%, #0f0f14 60%, #0c0c12 100%)",
+          color: "#ffffff",
+          fontFamily: "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <div
-            style={{
-              fontSize: 34,
-              fontWeight: 700,
-              letterSpacing: "-0.02em",
-            }}
-          >
+        {/* Top row: brand + badge */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ fontSize: 30, fontWeight: 700, letterSpacing: "-0.02em", color: "#fff" }}>
             OneGlanse
           </div>
           <div
             style={{
-              border: "1px solid #d4d4d4",
+              border: "1px solid rgba(255,255,255,0.14)",
               borderRadius: 9999,
-              padding: "8px 14px",
-              fontSize: 18,
-              color: "#404040",
+              padding: "7px 16px",
+              fontSize: 15,
+              color: "rgba(255,255,255,0.55)",
+              background: "rgba(255,255,255,0.05)",
+              letterSpacing: "0.01em",
             }}
           >
-            Open-source
+            Free · Open Source · Self-hostable
           </div>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "980px" }}>
-          <div style={{ fontSize: 62, fontWeight: 700, lineHeight: 1.04, letterSpacing: "-0.03em" }}>
-            Open-source AI visibility tracking.
+        {/* Center: headline + subtitle */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "18px", maxWidth: "960px" }}>
+          <div
+            style={{
+              fontSize: 68,
+              fontWeight: 800,
+              lineHeight: 1.0,
+              letterSpacing: "-0.04em",
+              color: "#ffffff",
+            }}
+          >
+            The only free,{"\n"}open-source GEO tracker.
           </div>
-          <div style={{ fontSize: 28, color: "#525252", lineHeight: 1.2 }}>
-            Measure visibility, mentions, sentiment, and citations across model answers.
+          <div
+            style={{
+              fontSize: 26,
+              color: "rgba(255,255,255,0.5)",
+              lineHeight: 1.35,
+              maxWidth: "820px",
+            }}
+          >
+            See exactly how your brand appears across ChatGPT, Gemini, Perplexity, Claude, and AI Overview — visibility scores, citations, and sentiment.
           </div>
         </div>
 
+        {/* Bottom: provider pills */}
         <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-          {["Open Source", "Self-hostable", "Source-backed Insights", "AI Visibility"].map((item) => (
+          {["ChatGPT", "Gemini", "Perplexity", "Claude", "AI Overview"].map((provider) => (
             <div
-              key={item}
+              key={provider}
               style={{
-                border: "1px solid #d4d4d4",
-                borderRadius: 12,
-                padding: "9px 12px",
-                fontSize: 18,
-                color: "#404040",
+                border: "1px solid rgba(255,255,255,0.11)",
+                borderRadius: 10,
+                padding: "9px 16px",
+                fontSize: 17,
+                color: "rgba(255,255,255,0.65)",
+                background: "rgba(255,255,255,0.05)",
+                letterSpacing: "-0.01em",
               }}
             >
-              {item}
+              {provider}
             </div>
           ))}
         </div>

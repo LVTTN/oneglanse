@@ -3,6 +3,7 @@
 	"theme": "mint",
 	"name": "OneGlanse",
 	"favicon": "/images/logo-dark.png",
+	"thumbnail": "/images/Mockup-1.png",
 	"colors": {
 		"primary": "#111827"
 	},

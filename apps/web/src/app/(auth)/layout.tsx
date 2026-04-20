@@ -14,7 +14,7 @@ import LayoutContent from "./layoutContent";
 
 export const metadata: Metadata = {
 	title: "OneGlanse",
-	description: "The open-source alternative to PeecAI",
+	description: "Track how your brand appears in ChatGPT, Gemini, Perplexity, Claude, and AI Overview.",
 	icons: appIcons,
 };
 

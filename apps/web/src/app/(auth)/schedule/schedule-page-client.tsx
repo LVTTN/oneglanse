@@ -129,20 +129,15 @@ function ManualRunView({
 				<PlayCircle className="h-6 w-6 text-gray-500 dark:text-gray-400" />
 			</div>
 
-			<div className="space-y-2">
+			<div className="space-y-1.5">
 				<h2 className="text-base font-semibold tracking-[-0.02em] text-gray-900 sm:text-lg dark:text-gray-100">
-					Manual run
+					{mode === "local" ? "Run prompts" : "Manual run"}
 				</h2>
-				<p className="text-sm leading-6 text-gray-500 dark:text-gray-400">
+				<p className="text-sm leading-5 text-gray-500 dark:text-gray-400">
 					{mode === "local"
-						? "Start a fresh run whenever you want updated responses."
+						? "Run all providers and get fresh responses on demand."
 						: "Trigger one immediate run without changing the recurring schedule."}
 				</p>
-				{mode === "local" ? (
-					<p className={cn(formHintClassName, "mt-1")}>
-						Recurring schedules are available in self-host mode.
-					</p>
-				) : null}
 			</div>
 
 			<Button
