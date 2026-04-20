@@ -49,6 +49,47 @@ function buildRootEnvTemplate(rawTemplate) {
 		);
 }
 
+function ensureGeneratedSecrets(rawEnv) {
+	const replacements = [
+		{
+			key: "BETTER_AUTH_SECRET",
+			shouldReplace: (value) =>
+				value === "" || value === "replace-me" || value === "changeme",
+			buildValue: () => randomBytes(32).toString("hex"),
+		},
+		{
+			key: "INTERNAL_CRON_SECRET",
+			shouldReplace: (value) =>
+				value === "" || value === "replace-me" || value === "changeme",
+			buildValue: () => randomUUID(),
+		},
+	];
+
+	let nextEnv = rawEnv;
+	let changed = false;
+
+	for (const replacement of replacements) {
+		const pattern = new RegExp(`^${replacement.key}=(.*)$`, "m");
+		const match = nextEnv.match(pattern);
+		if (!match) {
+			nextEnv = `${nextEnv.trimEnd()}\n${replacement.key}=${replacement.buildValue()}\n`;
+			changed = true;
+			continue;
+		}
+
+		const currentValue = stripWrappingQuotes((match[1] ?? "").trim());
+		if (replacement.shouldReplace(currentValue)) {
+			nextEnv = nextEnv.replace(
+				pattern,
+				`${replacement.key}=${replacement.buildValue()}`,
+			);
+			changed = true;
+		}
+	}
+
+	return { changed, value: nextEnv };
+}
+
 async function ensureFile(targetFile, sourceFile, options = {}) {
 	if (existsSync(targetFile)) {
 		return;
@@ -113,6 +154,16 @@ export async function ensureEnvFiles() {
 	await ensureFile(rootEnvFile, rootEnvExampleFile, {
 		transform: buildRootEnvTemplate,
 	});
+
+	if (existsSync(rootEnvFile)) {
+		const currentEnv = readFileSync(rootEnvFile, "utf8");
+		const updatedEnv = ensureGeneratedSecrets(currentEnv);
+		if (updatedEnv.changed) {
+			await writeFile(rootEnvFile, updatedEnv.value, "utf8");
+			console.log("Generated missing app secrets in .env.");
+		}
+	}
+
 	loadEnvFile(rootEnvFile, { override: true });
 }
 

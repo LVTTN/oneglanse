@@ -21,6 +21,9 @@ services:
       - .env
     environment:
       AGENT_AUTH_ROOT_DIR: /storage/auth
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-oneglanse}
+      CLICKHOUSE_URL: http://clickhouse:8123
+      REDIS_HOST: redis
     volumes:
       - ${ONEGLANSE_STORAGE_ROOT:-/opt/oneglanse/storage}:/storage
     ports:
@@ -161,8 +164,13 @@ services:
       HOSTNAME: 0.0.0.0
       PORT: "3000"
       AGENT_AUTH_ROOT_DIR: /storage/auth
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-oneglanse}
+      CLICKHOUSE_URL: http://clickhouse:8123
+      REDIS_HOST: redis
     volumes:
       - ${ONEGLANSE_STORAGE_ROOT:-/opt/oneglanse/storage}:/storage:ro
+    ports:
+      - "127.0.0.1:3000:3000"
     networks:
       - edge
       - frontend
@@ -199,6 +207,8 @@ services:
     container_name: oneglanse-migrate
     env_file:
       - .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-oneglanse}
     depends_on:
       db:
         condition: service_healthy

@@ -99,15 +99,17 @@ Note: these control sign-in to the OneGlanse web app itself. They are separate f
 
 ## Self-host: image pull fails
 
-**Symptom:** `pnpm self-host` fails with a Docker pull error or `unauthorized`.
+**Symptom:** `node scripts/run-compose.mjs bootstrap` fails with a Docker pull error or `unauthorized`.
 
 **Cause:** The GHCR images are unavailable or you're not authenticated with GHCR.
 
-**Fix:** `pnpm self-host` automatically falls back to building images locally if the pull fails. If you want to force a local build explicitly:
+**Fix:** The VPS flow expects published images, not a local source build. Check outbound access to GHCR and Docker Hub, then retry:
 
 ```bash
-pnpm self-host:build
+node scripts/run-compose.mjs bootstrap
 ```
+
+If you're maintaining a fork or testing unpublished changes, a local source build is still available as an advanced path via `pnpm self-host:build`, but that is not the standard VPS setup.
 
 ---
 
@@ -121,7 +123,7 @@ pnpm self-host:build
 
 ```bash
 # Check migration logs
-docker logs oneglanse-migrate-1
+docker logs oneglanse-migrate
 
 # Re-run migrations manually
 pnpm db:migrate
@@ -138,5 +140,6 @@ If there's a schema conflict from a previous installation, check the Drizzle mig
 **Fixes:**
 
 1. Confirm the VPS agent is running: `curl http://YOUR_VPS_IP:3333/health`
-2. Check `ONEGLANSE_VPS_IP` and `AGENT_AUTH_UPLOAD_TOKEN` match your VPS `.env`
-3. Check agent logs on the VPS: `docker logs oneglanse-agent-worker-1`
+2. Confirm port `3333/tcp` is allowed by your VPS firewall or cloud security group
+3. Check `ONEGLANSE_VPS_IP` and `AGENT_AUTH_UPLOAD_TOKEN` match your VPS `.env`
+4. Check agent logs on the VPS: `docker logs oneglanse-agent-worker`

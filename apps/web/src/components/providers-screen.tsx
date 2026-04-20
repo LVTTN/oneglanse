@@ -10,6 +10,7 @@ export function ProvidersScreen(props: {
 	nextHref?: string | null;
 	showSetupNotice?: boolean;
 	workspaceId?: string | null;
+	showOnboardingActions?: boolean;
 }) {
 	const {
 		title = DEFAULT_PROVIDERS_TITLE,
@@ -17,6 +18,7 @@ export function ProvidersScreen(props: {
 		nextHref = null,
 		showSetupNotice = true,
 		workspaceId = null,
+		showOnboardingActions = false,
 	} = props;
 
 	return (
@@ -28,6 +30,7 @@ export function ProvidersScreen(props: {
 					nextHref={nextHref}
 					showSetupNotice={showSetupNotice}
 					workspaceId={workspaceId}
+					showOnboardingActions={showOnboardingActions}
 				/>
 			</div>
 		</div>

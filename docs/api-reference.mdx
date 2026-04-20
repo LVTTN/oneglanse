@@ -9,10 +9,8 @@ description: Commands, routes, and runtime behavior reference for OneGlanse.
 pnpm local                   # Start full local stack (web + agent + docker services)
 pnpm auth                    # Start the local auth flow and capture provider sessions
 pnpm upload:vps              # Upload local auth sessions to VPS
-pnpm self-host               # Start full self-hosted stack
-pnpm self-host:app           # Restart app stack only
-pnpm self-host:public        # Restart public stack only
-pnpm self-host:build         # Build and start both stacks from source
+pnpm self-host               # Repo script alias for starting the published app stack
+pnpm self-host:build         # Advanced: build and start the app stack from source
 pnpm typecheck               # Typecheck the monorepo
 pnpm build                   # Build all packages
 ```

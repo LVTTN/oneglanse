@@ -24,7 +24,6 @@ Local mode is also the most reliable place to capture provider auth because it u
 ```bash
 git clone https://github.com/aryamantodkar/oneglanse
 cd oneglanse
-pnpm install
 cp .env.example .env
 ```
 
@@ -90,13 +89,16 @@ Camoufox gives the runtime a more suitable browser fingerprint profile for authe
 ## Self-Host
 
 Deploy OneGlanse on your own VPS for scheduled runs and continuous tracking.
+This path deploys only the app.
+
+- The landing site is deployed separately on Vercel
+- The docs are deployed separately on Mintlify
 
 ### 1. Deploy
 
 ```bash
 git clone https://github.com/aryamantodkar/oneglanse
 cd oneglanse
-pnpm install
 cp .env.example .env
 ```
 
@@ -118,10 +120,12 @@ APP_URL=https://your-domain.com
 API_BASE_URL=https://your-domain.com
 ```
 
+If `BETTER_AUTH_SECRET` or `INTERNAL_CRON_SECRET` are still `replace-me`, `node scripts/run-compose.mjs bootstrap` generates them automatically before the containers start.
+
 Start:
 
 ```bash
-pnpm self-host
+node scripts/run-compose.mjs bootstrap
 ```
 
 Persistent data is stored at /opt/oneglanse/storage
@@ -189,6 +193,6 @@ Open your deployed app, add prompts, and enable scheduling.
 ### Updates
 
 ```bash
-pnpm self-host:app
-pnpm self-host:public
+git pull
+node scripts/run-compose.mjs bootstrap
 ```

@@ -133,6 +133,7 @@ export function ProviderConnectionsPanel(props: {
 	nextHref?: string | null;
 	showSetupNotice?: boolean;
 	workspaceId?: string | null;
+	showOnboardingActions?: boolean;
 }) {
 	const {
 		title = "Providers",
@@ -140,6 +141,7 @@ export function ProviderConnectionsPanel(props: {
 		nextHref = null,
 		showSetupNotice = true,
 		workspaceId = null,
+		showOnboardingActions = false,
 	} = props;
 	const router = useRouter();
 	const authProvidersQuery = useProviderConnections();
@@ -496,7 +498,7 @@ export function ProviderConnectionsPanel(props: {
 				})}
 			</div>
 
-			{nextHref ? (
+			{showOnboardingActions && nextHref ? (
 				<div className="mt-6 flex items-center justify-end gap-3">
 					{hasAtLeastOneConnection ? (
 						<Button

@@ -1,6 +1,6 @@
 # @oneglanse/landing
 
-Public marketing site for OneGlanse.
+Public marketing site for OneGlanse, deployed separately on Vercel.
 
 ## Responsibilities
 

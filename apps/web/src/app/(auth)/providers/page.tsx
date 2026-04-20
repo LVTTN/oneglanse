@@ -34,6 +34,7 @@ export default async function ProvidersPage({
 			}
 			nextHref={nextHref}
 			showSetupNotice={!isSelfHost}
+			showOnboardingActions={false}
 			workspaceId={workspace?.id ?? null}
 		/>
 	);

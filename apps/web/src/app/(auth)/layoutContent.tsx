@@ -182,8 +182,13 @@ export default function LayoutContent({
 		false;
 	const canLaunchProvidersLocally = isInteractiveAuthAllowedInMode(appMode);
 	const isProvidersPage = pathname === "/providers";
+	const shouldEnforceProviderGate =
+		!resolvedWorkspace && !isResolvingWorkspaceFromUrl;
 	const shouldShowConnectionGate =
-		!hasAtLeastOneConnection && !hasSkippedProviderGate && !isProvidersPage;
+		shouldEnforceProviderGate &&
+		!hasAtLeastOneConnection &&
+		!hasSkippedProviderGate &&
+		!isProvidersPage;
 	const isWorkspaceSetupPage = pathname?.startsWith("/workspace") ?? false;
 	const isPeoplePage = pathname?.startsWith("/people") ?? false;
 	const pageHeader = getPageHeader(pathname);
@@ -259,22 +264,6 @@ export default function LayoutContent({
 
 	useEffect(() => {
 		if (
-			shouldShowConnectionGate &&
-			canLaunchProvidersLocally &&
-			!isProvidersPage
-		) {
-			router.replace(providersHref);
-		}
-	}, [
-		canLaunchProvidersLocally,
-		isProvidersPage,
-		providersHref,
-		router,
-		shouldShowConnectionGate,
-	]);
-
-	useEffect(() => {
-		if (
 			!resolvedWorkspace &&
 			!isResolvingWorkspaceFromUrl &&
 			hasAtLeastOneConnection &&
@@ -312,6 +301,7 @@ export default function LayoutContent({
 								: "Provider auth can only be captured on a local run. Run `pnpm auth` on your local machine, complete sign-in for at least one provider, then sync the saved auth back here before continuing."
 						}
 						nextHref={providersNextHref}
+						showOnboardingActions
 					/>
 				</main>
 			</>

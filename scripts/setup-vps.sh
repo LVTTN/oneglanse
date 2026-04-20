@@ -17,12 +17,15 @@ fatal()   { echo -e "${RED}✗${NC} $*" >&2; exit 1; }
 header()  { echo -e "\n${BOLD}$*${NC}"; }
 
 require_cmd() { command -v "$1" >/dev/null 2>&1; }
+has_group() { id -nG "$USER" | tr ' ' '\n' | grep -qx "$1"; }
+
+DOCKER_GROUP_PENDING=0
 
 # ─── Gather inputs ────────────────────────────────────────────────────────────
 
 header "OneGlanse — VPS Setup"
 echo "This script installs all dependencies, clones the repo, configures nginx + HTTPS,"
-echo "and starts the full self-hosted stack."
+echo "and starts the app-only self-hosted stack."
 echo ""
 warn "Run this as the user who will own the OneGlanse process (not root)."
 echo ""
@@ -51,10 +54,18 @@ else
   [[ -z "$ANTHROPIC_KEY" ]] && fatal "Anthropic key is required."
 fi
 
-read -rp "Residential proxy API URL (required on VPS — leave blank to skip for now): " PROXY_URL
+read -rp "Residential proxy API URL (required on VPS): " PROXY_URL
+[[ -z "$PROXY_URL" ]] && fatal "Residential proxy API URL is required on VPS."
 
-read -rsp "Auth upload token (any strong secret, e.g. openssl rand -hex 32): " AUTH_TOKEN; echo ""
-[[ -z "$AUTH_TOKEN" ]] && fatal "Auth upload token is required."
+read -rsp "Auth upload token [auto-generate if blank]: " AUTH_TOKEN; echo ""
+if [[ -z "$AUTH_TOKEN" ]]; then
+  if require_cmd openssl; then
+    AUTH_TOKEN="$(openssl rand -hex 32)"
+  else
+    AUTH_TOKEN="$(node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))")"
+  fi
+  info "Generated auth upload token automatically."
+fi
 
 echo ""
 info "Settings:"
@@ -72,10 +83,16 @@ header "1 / 6 — Installing dependencies"
 if ! require_cmd docker; then
   info "Installing Docker..."
   curl -fsSL https://get.docker.com | sh
-  sudo usermod -aG docker "$USER"
-  warn "Docker group change requires a new shell session. Re-run this script in a new session if docker commands fail."
 else
   success "Docker already installed"
+fi
+
+if ! has_group docker; then
+  info "Adding $USER to the docker group..."
+  sudo usermod -aG docker "$USER"
+  DOCKER_GROUP_PENDING=1
+else
+  success "User already has docker group access"
 fi
 
 if ! require_cmd node; then
@@ -84,13 +101,6 @@ if ! require_cmd node; then
   sudo apt-get install -y nodejs
 else
   success "Node.js already installed ($(node -v))"
-fi
-
-if ! require_cmd pnpm; then
-  info "Installing pnpm 10..."
-  npm install -g pnpm@10
-else
-  success "pnpm already installed ($(pnpm -v))"
 fi
 
 if ! require_cmd nginx; then
@@ -109,12 +119,10 @@ if [[ -d "$INSTALL_DIR/.git" ]]; then
   git -C "$INSTALL_DIR" pull
 else
   info "Cloning into $INSTALL_DIR..."
-  git clone https://github.com/aryamantodkar/oneglanse "$INSTALL_DIR"
+  git clone --depth 1 https://github.com/aryamantodkar/oneglanse "$INSTALL_DIR"
 fi
 
 cd "$INSTALL_DIR"
-info "Installing dependencies..."
-pnpm install
 
 # ─── Configure .env ───────────────────────────────────────────────────────────
 
@@ -134,6 +142,18 @@ set_env() {
   fi
 }
 
+ensure_secret() {
+  local key="$1" generator="$2" current=""
+  current="$(grep "^${key}=" .env | head -n1 | cut -d= -f2- || true)"
+  if [[ -n "$current" && "$current" != "replace-me" && "$current" != "changeme" ]]; then
+    return
+  fi
+
+  local generated
+  generated="$(eval "$generator")"
+  set_env "$key" "$generated"
+}
+
 set_env "APP_URL"      "https://${DOMAIN}"
 set_env "API_BASE_URL" "https://${DOMAIN}"
 set_env "AGENT_AUTH_UPLOAD_TOKEN" "$AUTH_TOKEN"
@@ -146,9 +166,9 @@ else
   set_env "ANALYSIS_LLM_PROVIDER" "claude"
 fi
 
-if [[ -n "$PROXY_URL" ]]; then
-  set_env "THORDATA_PROXY_API_URL" "$PROXY_URL"
-fi
+set_env "THORDATA_PROXY_API_URL" "$PROXY_URL"
+ensure_secret "BETTER_AUTH_SECRET" "openssl rand -hex 32"
+ensure_secret "INTERNAL_CRON_SECRET" "node -e \"console.log(require('node:crypto').randomUUID())\""
 
 success ".env configured"
 
@@ -156,8 +176,16 @@ success ".env configured"
 
 header "4 / 6 — Starting OneGlanse"
 
-info "Running pnpm self-host (this pulls Docker images and starts all services)..."
-pnpm self-host
+info "Starting the app from published Docker images..."
+if has_group docker; then
+  node scripts/run-compose.mjs bootstrap
+elif [[ "$DOCKER_GROUP_PENDING" -eq 1 ]]; then
+  info "Current shell does not yet include the docker group — bootstrapping with sudo using the docker group for this first run."
+  printf -v SELF_HOST_CMD 'cd %q && node scripts/run-compose.mjs bootstrap' "$INSTALL_DIR"
+  sudo -u "$USER" -g docker env "HOME=$HOME" "PATH=$PATH" bash -lc "$SELF_HOST_CMD"
+else
+  fatal "Current shell cannot access Docker. Run 'newgrp docker' or sign out and back in, then re-run this script."
+fi
 
 info "Waiting for web container to become healthy..."
 for i in $(seq 1 30); do
@@ -167,7 +195,7 @@ for i in $(seq 1 30); do
   fi
   sleep 3
   if [[ $i -eq 30 ]]; then
-    warn "Web app not responding after 90s — check 'docker logs oneglanse-web-1'"
+    warn "Web app not responding after 90s — check 'docker logs oneglanse-web'"
   fi
 done
 
@@ -200,6 +228,7 @@ EOF
 if [[ ! -L /etc/nginx/sites-enabled/oneglanse ]]; then
   sudo ln -s "$NGINX_CONF" /etc/nginx/sites-enabled/oneglanse
 fi
+sudo rm -f /etc/nginx/sites-enabled/default
 
 sudo nginx -t
 sudo systemctl reload nginx
@@ -216,8 +245,9 @@ header "6 / 6 — Configuring firewall"
 if require_cmd ufw; then
   sudo ufw allow OpenSSH
   sudo ufw allow 'Nginx Full'
+  sudo ufw allow 3333/tcp
   sudo ufw --force enable
-  success "ufw configured (SSH + HTTP/HTTPS allowed)"
+  success "ufw configured (SSH + HTTP/HTTPS + auth upload allowed)"
 else
   warn "ufw not found — configure your firewall manually"
 fi
@@ -239,5 +269,5 @@ echo "  3. Run: pnpm upload:vps  (transfer sessions to this VPS)"
 echo "  4. Open https://${DOMAIN}, create your account, and add prompts."
 echo ""
 echo "To update in the future:"
-echo "  cd ${INSTALL_DIR} && git pull && pnpm self-host:app"
+echo "  cd ${INSTALL_DIR} && git pull && node scripts/run-compose.mjs bootstrap"
 echo ""

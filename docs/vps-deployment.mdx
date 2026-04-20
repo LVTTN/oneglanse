@@ -1,11 +1,11 @@
 ---
 title: VPS Deployment
-description: Deploy OneGlanse on your own VPS with nginx, SSL, and automatic provider auth — step by step with copy-paste commands.
+description: Deploy the OneGlanse app on your own VPS with nginx, SSL, and provider auth upload — step by step with copy-paste commands.
 ---
 
 ## Interactive setup (recommended)
 
-If you're on Ubuntu 22.04 / 24.04, the setup script handles everything — dependencies, repo clone, `.env` config, nginx, SSL, and firewall — in one session:
+If you're on Ubuntu 22.04 / 24.04, the setup script handles everything for the app deployment path — dependencies, repo clone, `.env` config, Docker image pull, nginx, SSL, and firewall — in one session:
 
 ```bash
 # On your VPS (as a non-root user with sudo privileges):
@@ -19,7 +19,13 @@ git clone https://github.com/aryamantodkar/oneglanse /tmp/oneglanse
 bash /tmp/oneglanse/scripts/setup-vps.sh
 ```
 
-The script is interactive — it asks for your domain, LLM key, proxy URL, and auth token, then does the rest.
+The script is interactive — it asks for your domain, LLM key, and proxy URL, then does the rest. If you leave the auth upload token blank, it generates one automatically, and it handles first-run Docker group access for the setup user in the same session.
+
+The VPS flow is intentionally simple:
+
+- it pulls the published Docker images
+- it does not build the app on your server by default
+- `git pull` updates the deployment files, and the next bootstrap pulls the latest published app images
 
 ---
 
@@ -30,6 +36,11 @@ This guide deploys OneGlanse on a fresh Ubuntu 22.04 / 24.04 VPS. At the end you
 - OneGlanse running behind nginx with HTTPS
 - Postgres, ClickHouse, and Redis running in Docker
 - Provider sessions uploaded from your local machine
+
+This guide intentionally deploys only the app.
+
+- The landing site is deployed separately on Vercel
+- The docs are deployed separately on Mintlify
 
 Important context before you start:
 
@@ -72,9 +83,6 @@ newgrp docker
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt-get install -y nodejs
 
-# pnpm
-npm install -g pnpm@10
-
 # nginx + certbot
 sudo apt install -y nginx certbot python3-certbot-nginx
 ```
@@ -86,7 +94,6 @@ sudo apt install -y nginx certbot python3-certbot-nginx
 ```bash
 git clone https://github.com/aryamantodkar/oneglanse /home/$USER/oneglanse
 cd /home/$USER/oneglanse
-pnpm install
 cp .env.example .env
 ```
 
@@ -116,7 +123,7 @@ THORDATA_PROXY_API_URL=https://your-thordata-endpoint
 AGENT_AUTH_UPLOAD_TOKEN=replace-with-a-strong-secret
 ```
 
-The scripts auto-generate `BETTER_AUTH_SECRET` and `INTERNAL_CRON_SECRET` on first run.
+If `BETTER_AUTH_SECRET` or `INTERNAL_CRON_SECRET` are still unset or left as `replace-me`, `node scripts/run-compose.mjs bootstrap` generates them automatically before Docker starts.
 
 Why the proxy is mandatory on VPS:
 
@@ -131,11 +138,13 @@ The proxy is what makes VPS-based scheduling viable. Without it, direct provider
 ## 4. Start the stack
 
 ```bash
-pnpm self-host
+node scripts/run-compose.mjs bootstrap
 ```
 
-This pulls the Docker images and starts:
-- Web app on port **3000**
+On a fresh server, this can take several minutes because Docker has to pull the published images.
+
+This pulls the published Docker images and starts:
+- Web app on **127.0.0.1:3000** (loopback only, for nginx)
 - Agent worker (internal)
 - Postgres on port **5432** (internal)
 - ClickHouse on port **8123** (internal)
@@ -185,6 +194,7 @@ Enable the site and reload:
 
 ```bash
 sudo ln -s /etc/nginx/sites-available/oneglanse /etc/nginx/sites-enabled/
+sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t
 sudo systemctl reload nginx
 ```
@@ -254,13 +264,7 @@ Pull and redeploy without downtime:
 ```bash
 cd /home/$USER/oneglanse
 git pull
-pnpm self-host:app      # restart app + agent only
-```
-
-To also redeploy the landing page:
-
-```bash
-pnpm self-host          # restart everything
+node scripts/run-compose.mjs bootstrap
 ```
 
 ---
@@ -272,10 +276,11 @@ Allow only the ports nginx needs — block everything else:
 ```bash
 sudo ufw allow OpenSSH
 sudo ufw allow 'Nginx Full'
+sudo ufw allow 3333/tcp
 sudo ufw enable
 ```
 
-The app ports (3000, 5432, 8123, 6379, 3333) are internal only and stay closed to the internet. The agent's auth upload endpoint (3333) is only reachable from your local machine via `pnpm upload:vps`.
+The app ports (3000, 5432, 8123, 6379) stay internal. Port `3333` must remain reachable from your local machine because `pnpm upload:vps` sends provider sessions to `http://YOUR_VPS_IP:3333/auth/sessions`.
 
 ---
 
@@ -283,7 +288,7 @@ The app ports (3000, 5432, 8123, 6379, 3333) are internal only and stay closed t
 
 **502 Bad Gateway** — the web container isn't running yet. Check:
 ```bash
-docker logs oneglanse-web-1 --tail 50
+docker logs oneglanse-web --tail 50
 ```
 
 **SSL certificate failed** — DNS hasn't propagated yet. Wait a few minutes and retry:
