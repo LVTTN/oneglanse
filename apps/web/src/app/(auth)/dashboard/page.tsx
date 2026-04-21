@@ -3,14 +3,18 @@
 import { ExportMenu } from "@/components/export-menu";
 import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
 import { api } from "@/trpc/react";
+import type { AnalysisRecord } from "@oneglanse/types";
 import {
 	AggregateStatsRow,
 	BrandComparisonChart,
 	BrandPerceptionCard,
 	CompetitiveLandscape,
+	type PromptGroup,
+	PromptResponsesList,
 	TopSources,
 } from "@oneglanse/ui";
-import { AlertTriangle, Info } from "lucide-react";
+import { filterAnalysisRecords } from "@oneglanse/utils";
+import { AlertTriangle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 import {
@@ -23,6 +27,7 @@ import { DashboardFilters } from "./_components/filters";
 import {
 	DashboardSkeleton,
 	EmptyState,
+	FilteredDashboardState,
 	NoAnalysisState,
 	NoWorkspaceState,
 } from "./_components/states";
@@ -86,6 +91,65 @@ export default function Dashboard() {
 	}, [analysedPromptData]);
 	const hasFilteredAnalysis = metrics.analyzedRecords.length > 0;
 	const hasExportableData = hasFilteredAnalysis;
+	const hasCompetitorRows = useMemo(
+		() => metrics.competitorData.some((competitor) => !competitor.isBrand),
+		[metrics.competitorData],
+	);
+	const hasSourceRows = metrics.sourcesIntelligence.length > 0;
+	const hasBrandPerceptionData =
+		Boolean(metrics.brandPerception.bestKnownFor) ||
+		metrics.brandPerception.pricingPerception !== "not_mentioned" ||
+		metrics.brandPerception.coreClaims.length > 0 ||
+		metrics.brandPerception.differentiators.length > 0;
+	const insightCardCount =
+		Number(hasSourceRows) + Number(hasBrandPerceptionData);
+
+	// Build prompt groups for the responses list section
+	const promptGroups = useMemo((): PromptGroup[] => {
+		if (!analysedPromptData) return [];
+		const filtered = filterAnalysisRecords(analysedPromptData, {
+			modelFilter,
+			timeFilter,
+		});
+		const groupMap = new Map<
+			string,
+			{ promptText: string; rows: AnalysisRecord[] }
+		>();
+		for (const record of filtered) {
+			const existing = groupMap.get(record.prompt_id);
+			if (existing) {
+				existing.rows.push(record);
+			} else {
+				groupMap.set(record.prompt_id, {
+					promptText: record.prompt,
+					rows: [record],
+				});
+			}
+		}
+		return Array.from(groupMap.entries()).map(
+			([promptId, { promptText, rows }]) => ({
+				promptId,
+				promptText,
+				rows: rows.map((r) => ({
+					id: r.id,
+					modelProvider: r.model_provider,
+					promptRunAt: r.prompt_run_at,
+					response: r.response,
+					isAnalysed: r.is_analysed ?? false,
+					sources: r.sources.map((s) => ({ title: s.title, url: s.url })),
+					metrics:
+						r.is_analysed && r.brand_analysis
+							? {
+									geoScore: r.brand_analysis.geoScore.overall,
+									sentiment: r.brand_analysis.sentiment.score,
+									visibility: r.brand_analysis.presence.visibility,
+									position: r.brand_analysis.position.rankPosition,
+								}
+							: undefined,
+				})),
+			}),
+		);
+	}, [analysedPromptData, modelFilter, timeFilter]);
 
 	// Conditional renders
 	if (!workspaceId) return <NoWorkspaceState />;
@@ -146,58 +210,77 @@ export default function Dashboard() {
 						/>
 					</div>
 
-					{/* Aggregate Stats */}
-					<AggregateStatsRow
-						presenceRate={metrics.aggregateStats.presenceRate}
-						rank={metrics.avgRank.position ?? 0}
-						topSource={metrics.sourcesIntelligence[0]?.domain ?? "N/A"}
-						topCompetitor={metrics.aggregateStats.topCompetitor}
-						topCompetitorDomain={
-							metrics.competitorData.find(
-								(c) =>
-									c.name === metrics.aggregateStats.topCompetitor && !c.isBrand,
-							)?.domain
-						}
-						noData={!hasFilteredAnalysis}
-					/>
-
-					{!hasFilteredAnalysis && (
-						<div className="flex items-start gap-2 rounded-[var(--app-radius)] border border-gray-100/80 bg-white px-4 py-4 text-sm text-muted-foreground shadow-[0_20px_60px_-32px_rgba(15,23,42,0.18)] dark:border-gray-800 dark:bg-neutral-950 dark:shadow-[0_20px_60px_-32px_rgba(0,0,0,0.55)]">
-							<Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-							<span>
-								No analysis data for this filter selection. Try another model or
-								time range.
-							</span>
-						</div>
-					)}
-
-					<div className="space-y-4 sm:space-y-5">
-						<CompetitiveLandscape competitors={metrics.competitorData} />
-
-						<div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-2">
-							<TopSources
-								sources={metrics.sourcesIntelligence}
-								totalCitations={metrics.totalCitations}
-							/>
-							<BrandPerceptionCard
-								bestKnownFor={metrics.brandPerception.bestKnownFor}
-								pricingPerception={metrics.brandPerception.pricingPerception}
-								coreClaims={metrics.brandPerception.coreClaims}
-								differentiators={metrics.brandPerception.differentiators}
-							/>
-						</div>
-
-						<BrandComparisonChart
-							competitors={metrics.competitorData}
-							brandName={metrics.brandName}
-							brandDomain={metrics.brandDomain}
-							totalResponses={metrics.impactMetrics.totalResponses}
-							brandPresenceRate={metrics.aggregateStats.presenceRate}
-							brandRecommendationRate={metrics.impactMetrics.recommendationRate}
-							brandSentimentScore={metrics.avgSentiment.score}
-							brandAvgRank={metrics.avgRank.position}
+					{!hasFilteredAnalysis ? (
+						<FilteredDashboardState
+							workspaceId={workspaceId}
+							modelFilter={modelFilter}
 						/>
-					</div>
+					) : (
+						<>
+							<AggregateStatsRow
+								presenceRate={metrics.aggregateStats.presenceRate}
+								rank={metrics.avgRank.position ?? 0}
+								topSource={metrics.sourcesIntelligence[0]?.domain ?? "N/A"}
+								topCompetitor={metrics.aggregateStats.topCompetitor}
+								topCompetitorDomain={
+									metrics.competitorData.find(
+										(c) =>
+											c.name === metrics.aggregateStats.topCompetitor &&
+											!c.isBrand,
+									)?.domain
+								}
+							/>
+
+							<div className="space-y-4 sm:space-y-5">
+								{hasCompetitorRows ? (
+									<CompetitiveLandscape competitors={metrics.competitorData} />
+								) : null}
+
+								{insightCardCount > 0 ? (
+									<div
+										className={`grid grid-cols-1 items-stretch gap-4 ${
+											insightCardCount > 1 ? "lg:grid-cols-2" : "lg:grid-cols-1"
+										}`}
+									>
+										{hasSourceRows ? (
+											<TopSources
+												sources={metrics.sourcesIntelligence}
+												totalCitations={metrics.totalCitations}
+											/>
+										) : null}
+										{hasBrandPerceptionData ? (
+											<BrandPerceptionCard
+												bestKnownFor={metrics.brandPerception.bestKnownFor}
+												pricingPerception={
+													metrics.brandPerception.pricingPerception
+												}
+												coreClaims={metrics.brandPerception.coreClaims}
+												differentiators={
+													metrics.brandPerception.differentiators
+												}
+											/>
+										) : null}
+									</div>
+								) : null}
+
+								<BrandComparisonChart
+									competitors={metrics.competitorData}
+									brandName={metrics.brandName}
+									totalResponses={metrics.impactMetrics.totalResponses}
+									brandPresenceRate={metrics.aggregateStats.presenceRate}
+									brandRecommendationRate={
+										metrics.impactMetrics.recommendationRate
+									}
+									brandSentimentScore={metrics.avgSentiment.score}
+									brandAvgRank={metrics.avgRank.position}
+								/>
+							</div>
+
+							{promptGroups.length > 0 ? (
+								<PromptResponsesList groups={promptGroups} />
+							) : null}
+						</>
+					)}
 				</div>
 			</div>
 		</div>

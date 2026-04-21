@@ -145,6 +145,7 @@ function getCardMutationState(args: {
 export function ProviderConnectionsPanel(props: {
 	title?: string | null;
 	description?: string | null;
+	helperText?: string | null;
 	nextHref?: string | null;
 	showSetupNotice?: boolean;
 	workspaceId?: string | null;
@@ -154,6 +155,7 @@ export function ProviderConnectionsPanel(props: {
 	const {
 		title = "Providers",
 		description = "Log in to a provider, then close the browser window. Auth is saved automatically.",
+		helperText = null,
 		nextHref = null,
 		showSetupNotice = true,
 		workspaceId = null,
@@ -326,6 +328,11 @@ export function ProviderConnectionsPanel(props: {
 							{description}
 						</p>
 					) : null}
+					{helperText ? (
+						<p className="text-xs leading-5 text-gray-500 dark:text-gray-400">
+							{helperText}
+						</p>
+					) : null}
 				</div>
 			</div>
 
@@ -357,7 +364,7 @@ export function ProviderConnectionsPanel(props: {
 				</p>
 			) : null}
 
-			<div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:items-start lg:gap-3">
+			<div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-3">
 				{cards.map((card) => {
 					const status = card.status;
 					const { isPendingForProvider, isPendingConnect, isPendingRefresh } =
@@ -387,14 +394,14 @@ export function ProviderConnectionsPanel(props: {
 						<div
 							key={card.provider}
 							className={cn(
-								"group relative overflow-hidden px-4 py-4 transition-[background-color,box-shadow,border-color] duration-200 ease-out sm:px-5 sm:py-5",
+								"group relative flex overflow-hidden px-4 py-4 transition-[background-color,box-shadow,border-color] duration-200 ease-out sm:px-5 sm:py-5",
 								getConnectionCardClasses(card),
 							)}
 						>
-							<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+							<div className="flex h-full w-full flex-col justify-center gap-4 sm:flex-row sm:items-center sm:justify-between">
 								<div
 									className={cn(
-										"min-w-0 flex-1 transition-opacity duration-200",
+										"flex min-w-0 flex-1 items-center transition-opacity duration-200",
 										!isEnabled && workspaceId ? "opacity-40" : "opacity-100",
 									)}
 								>
@@ -406,7 +413,7 @@ export function ProviderConnectionsPanel(props: {
 										/>
 
 										<div className="min-w-0">
-											<div className="flex flex-col gap-1">
+											<div className="flex flex-col justify-center gap-1">
 												<span className="text-[10px] font-medium uppercase tracking-[0.1em] text-gray-400 dark:text-gray-500">
 													Provider
 												</span>
@@ -436,7 +443,7 @@ export function ProviderConnectionsPanel(props: {
 									</div>
 								</div>
 
-								<div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:shrink-0 sm:justify-end">
+								<div className="flex w-full flex-wrap items-center justify-start gap-2 sm:w-auto sm:shrink-0 sm:justify-end">
 									{statusLabel ? (
 										<span
 											className={cn(
@@ -475,7 +482,7 @@ export function ProviderConnectionsPanel(props: {
 											size="icon"
 											className={cn(
 												formSecondaryButtonClassName,
-												"size-9 shrink-0 border border-gray-200/80 p-0 text-gray-500 dark:border-gray-700 dark:text-gray-300",
+												"h-10 w-10 min-w-10 shrink-0 rounded-full border border-gray-200/80 px-0 py-0 text-gray-500 dark:border-gray-700 dark:text-gray-300",
 											)}
 											onClick={() =>
 												providerActionMutation.mutate({
