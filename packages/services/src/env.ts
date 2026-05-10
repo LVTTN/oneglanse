@@ -18,7 +18,12 @@ const ServicesEnvSchema = z.object({
 	INTERNAL_CRON_SECRET: z.string().optional(),
 	OPENAI_API_KEY: z.string().optional(),
 	ANTHROPIC_API_KEY: z.string().optional(),
-	ANALYSIS_LLM_PROVIDER: z.enum(["openai", "claude"]).default("openai"),
+	GROQ_API_KEY: z.string().optional(),
+	OLLAMA_BASE_URL: z.string().trim().default("http://localhost:11434/v1"),
+	ANALYSIS_LLM_MODEL: z.string().trim().optional(),
+	ANALYSIS_LLM_PROVIDER: z
+		.enum(["openai", "claude", "groq", "ollama"])
+		.default("openai"),
 });
 
 export const env = ServicesEnvSchema.parse(process.env);

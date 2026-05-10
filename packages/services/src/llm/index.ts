@@ -5,6 +5,8 @@ import { env } from "../env.js";
 
 let openaiClient: ChatGptClient | null = null;
 let anthropicClient: Anthropic | null = null;
+let groqClient: ChatGptClient | null = null;
+let ollamaClient: ChatGptClient | null = null;
 
 function initOpenai(): ChatGptClient {
 	if (openaiClient) return openaiClient;
@@ -36,6 +38,36 @@ function initAnthropic(): Anthropic {
 	return anthropicClient;
 }
 
+function initGroq(): ChatGptClient {
+	if (groqClient) return groqClient;
+
+	const apiKey = env.GROQ_API_KEY;
+	if (!apiKey) {
+		throw new EnvError(
+			"GROQ_API_KEY",
+			"Missing Groq API key. Please set GROQ_API_KEY in your environment to use Groq.",
+		);
+	}
+
+	groqClient = new ChatGptClient({
+		apiKey,
+		baseURL: "https://api.groq.com/openai/v1",
+	});
+	return groqClient;
+}
+
+function initOllama(): ChatGptClient {
+	if (ollamaClient) return ollamaClient;
+
+	// Ollama's OpenAI-compatible endpoint doesn't require a real key,
+	// but the OpenAI SDK requires a non-empty string.
+	ollamaClient = new ChatGptClient({
+		apiKey: "ollama",
+		baseURL: env.OLLAMA_BASE_URL,
+	});
+	return ollamaClient;
+}
+
 /**
  * Proxy defers client creation until first actual usage
  */
@@ -50,6 +82,22 @@ export const chatgpt = new Proxy({} as ChatGptClient, {
 export const claude = new Proxy({} as Anthropic, {
 	get(_target, prop) {
 		const instance = initAnthropic();
+		// @ts-expect-error – dynamic proxy passthrough
+		return instance[prop];
+	},
+});
+
+export const groq = new Proxy({} as ChatGptClient, {
+	get(_target, prop) {
+		const instance = initGroq();
+		// @ts-expect-error – dynamic proxy passthrough
+		return instance[prop];
+	},
+});
+
+export const ollama = new Proxy({} as ChatGptClient, {
+	get(_target, prop) {
+		const instance = initOllama();
 		// @ts-expect-error – dynamic proxy passthrough
 		return instance[prop];
 	},

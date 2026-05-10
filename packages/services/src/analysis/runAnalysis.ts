@@ -1,7 +1,7 @@
 import { ExternalServiceError, ValidationError } from "@oneglanse/errors";
 import type { AnalysisInputSingle, BrandAnalysisResult } from "@oneglanse/types";
 import { env } from "../env.js";
-import { chatgpt, claude } from "../llm/index.js";
+import { chatgpt, claude, groq, ollama } from "../llm/index.js";
 import { analysisPrompt } from "./analysisPrompt.js";
 
 const systemPrompt =
@@ -11,11 +11,22 @@ const systemPrompt =
 	"Be precise, evidence-based, and conservative in your scoring. " +
 	"If the brand is not mentioned in the response, return zeroed-out scores and empty arrays rather than fabricating data.";
 
+const DEFAULT_MODELS = {
+	openai: "gpt-4.1",
+	claude: "claude-sonnet-4-6",
+	groq: "llama-3.3-70b-versatile",
+	ollama: "llama3.1",
+} as const;
+
+function modelFor(provider: keyof typeof DEFAULT_MODELS): string {
+	return env.ANALYSIS_LLM_MODEL?.trim() || DEFAULT_MODELS[provider];
+}
+
 async function runWithOpenAI(prompt: string, responseLength: number): Promise<string> {
 	let response;
 	try {
 		response = await chatgpt.responses.create({
-			model: "gpt-4.1",
+			model: modelFor("openai"),
 			temperature: 0,
 			input: [
 				{ role: "system", content: systemPrompt },
@@ -39,7 +50,7 @@ async function runWithClaude(prompt: string, responseLength: number): Promise<st
 	let response;
 	try {
 		response = await claude.messages.create({
-			model: "claude-sonnet-4-6",
+			model: modelFor("claude"),
 			max_tokens: 4096,
 			temperature: 0,
 			system: systemPrompt,
@@ -58,15 +69,71 @@ async function runWithClaude(prompt: string, responseLength: number): Promise<st
 	return block?.type === "text" ? block.text.trim() : "";
 }
 
+async function runWithOpenAICompatible(
+	client: typeof groq,
+	model: string,
+	serviceLabel: string,
+	prompt: string,
+	responseLength: number,
+): Promise<string> {
+	let response;
+	try {
+		response = await client.chat.completions.create({
+			model,
+			temperature: 0,
+			response_format: { type: "json_object" },
+			messages: [
+				{ role: "system", content: systemPrompt },
+				{ role: "user", content: prompt },
+			],
+		});
+	} catch (err) {
+		throw new ExternalServiceError(
+			serviceLabel,
+			"Failed to analyze response.",
+			502,
+			{ responseLength },
+			err,
+		);
+	}
+	const text = response.choices[0]?.message?.content ?? "";
+	return text.trim();
+}
+
+async function runWithGroq(prompt: string, responseLength: number): Promise<string> {
+	return runWithOpenAICompatible(groq, modelFor("groq"), "Groq", prompt, responseLength);
+}
+
+async function runWithOllama(prompt: string, responseLength: number): Promise<string> {
+	return runWithOpenAICompatible(
+		ollama,
+		modelFor("ollama"),
+		"Ollama",
+		prompt,
+		responseLength,
+	);
+}
+
 export async function runAnalysis(
 	input: AnalysisInputSingle,
 ): Promise<BrandAnalysisResult> {
 	const prompt = analysisPrompt(input);
+	const responseLength = input.response.length;
 
-	const text =
-		env.ANALYSIS_LLM_PROVIDER === "claude"
-			? await runWithClaude(prompt, input.response.length)
-			: await runWithOpenAI(prompt, input.response.length);
+	let text: string;
+	switch (env.ANALYSIS_LLM_PROVIDER) {
+		case "claude":
+			text = await runWithClaude(prompt, responseLength);
+			break;
+		case "groq":
+			text = await runWithGroq(prompt, responseLength);
+			break;
+		case "ollama":
+			text = await runWithOllama(prompt, responseLength);
+			break;
+		default:
+			text = await runWithOpenAI(prompt, responseLength);
+	}
 
 	let parsed: unknown;
 	try {

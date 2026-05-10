@@ -176,7 +176,7 @@ services:
     volumes:
       - ${ONEGLANSE_STORAGE_ROOT:-/opt/oneglanse/storage}:/storage:ro
     ports:
-      - "127.0.0.1:3000:3000"
+      - "0.0.0.0:3001:3000"
     networks:
       - edge
       - frontend
