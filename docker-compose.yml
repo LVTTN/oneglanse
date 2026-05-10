@@ -150,6 +150,7 @@ services:
       - frontend
       - backend
       - data
+      - dokploy-network
     depends_on:
       db:
         condition: service_healthy
@@ -193,6 +194,8 @@ volumes:
   redis_data:
 
 networks:
+  dokploy-network:
+    external: true
   edge:
     driver: bridge
   frontend:
