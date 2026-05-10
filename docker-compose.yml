@@ -194,8 +194,7 @@ volumes:
 
 networks:
   edge:
-    external: true
-    name: oneglanse-edge
+    driver: bridge
   frontend:
     driver: bridge
   backend:
