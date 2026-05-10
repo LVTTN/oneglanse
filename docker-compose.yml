@@ -34,14 +34,6 @@ services:
     networks:
       - data
       - backend
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
-          memory: 4G
-        reservations:
-          cpus: '1'
-          memory: 1G
     healthcheck:
       test:
         [
@@ -69,14 +61,6 @@ services:
       - "127.0.0.1:6379:6379"
     networks:
       - data
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-        reservations:
-          cpus: '0.1'
-          memory: 128M
     healthcheck:
       test: ["CMD-SHELL", "redis-cli -a \"${REDIS_PASSWORD:-redis}\" --no-auth-warning ping"]
       interval: 5s
@@ -107,14 +91,6 @@ services:
       - "127.0.0.1:5432:5432"
     networks:
       - data
-    deploy:
-      resources:
-        limits:
-          cpus: '1'
-          memory: 1G
-        reservations:
-          cpus: '0.25'
-          memory: 256M
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-oneglanse}"]
       interval: 5s
@@ -137,14 +113,6 @@ services:
       - "127.0.0.1:8123:8123"
     networks:
       - data
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
-          memory: 2G
-        reservations:
-          cpus: '0.5'
-          memory: 512M
     healthcheck:
       test: ["CMD-SHELL", "clickhouse-client --user ${CLICKHOUSE_USER:-default} --password ${CLICKHOUSE_PASSWORD:-clickhouse} --query 'SELECT 1'"]
       interval: 10s
@@ -182,14 +150,6 @@ services:
       - frontend
       - backend
       - data
-    deploy:
-      resources:
-        limits:
-          cpus: '1'
-          memory: 1G
-        reservations:
-          cpus: '0.25'
-          memory: 256M
     depends_on:
       db:
         condition: service_healthy
